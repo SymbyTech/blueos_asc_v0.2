@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
 from pydantic import BaseModel
-from Stack import Stack
+from app.Stack import Stack
 
 # Service name for logging
 SERVICE_NAME = "RealTimeSensorDisplay"
