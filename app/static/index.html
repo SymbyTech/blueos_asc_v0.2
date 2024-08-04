@@ -391,6 +391,10 @@
                                             }
                                             }
                                         },
+                                        mounted() {
+                                            this.fetchSensorData();
+                                            setInterval(this.fetchSensorData, 1000); // Fetch data every second
+                                        }
                                     });
                                     </script>
 
