@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Real Time Sensor Display</title>
+    <link href="css/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<style>
+    .v-card {
+        padding: 20px;
+    }
+
+    h1 {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .container {
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .hero {
+        text-align: center;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 10px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 10px;
+        width: 16px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+
+    input:checked + .slider {
+        background-color: #f32121;
+    }
+
+    input:focus + .slider {
+        box-shadow: 0 0 1px #f32121;
+    }
+
+    input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+    }
+
+    .slider.round {
+        border-radius: 34px;
+    }
+
+    .slider.round:before {
+        border-radius: 50%;
+    }
+</style>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-container>
+                    <h1>Real Time Sensor Display</h1>
+                    <div class="container">
+                        <div class="hero">
+                            <div class="chart-container">
+                                <h3>Board 0 - Cameras</h3>
+                                <table style="width:100%">
+                                    <tr>
+                                        <td>Channel</td>
+                                        <td>Voltage</td>
+                                        <td>Current</td>
+                                        <td>Watt</td>
+                                        <td>Switch</td>
+                                    </tr>
+                                    <tr>
+                                        <td>1</td>
+                                        <td id="v1"></td>
+                                        <td id="c1"></td>
+                                        <td id="t1"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b0-0" @change="toggle(0, 0, 'b0')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td id="v2"></td>
+                                        <td id="c2"></td>
+                                        <td id="t2"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b0-1" @change="toggle(1, 0, 'b0')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td id="v3"></td>
+                                        <td id="c3"></td>
+                                        <td id="t3"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b0-2" @change="toggle(2, 0, 'b0')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td id="v4"></td>
+                                        <td id="c4"></td>
+                                        <td id="t4"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b0-3" @change="toggle(3, 0, 'b0')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <h3>Board 1 - LEDS</h3>
+                                <table style="width:100%">
+                                    <tr>
+                                        <td>Channel</td>
+                                        <td>Voltage</td>
+                                        <td>Current</td>
+                                        <td>Watt</td>
+                                        <td>Switch</td>
+                                    </tr>
+                                    <tr>
+                                        <td>LED 1</td>
+                                        <td id="v11-0-1"></td>
+                                        <td id="c11-0-1"></td>
+                                        <td id="t11-0-1"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b1-0" @change="toggle(0, 1, 'b1')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>LED 2</td>
+                                        <td id="v12-0-1"></td>
+                                        <td id="c12-0-1"></td>
+                                        <td id="t12-0-1"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b1-1" @change="toggle(1, 1, 'b1')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>LED 3</td>
+                                        <td id="v13-0-1"></td>
+                                        <td id="c13-0-1"></td>
+                                        <td id="t13-0-1"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b1-2" @change="toggle(2, 1, 'b1')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>LED 4</td>
+                                        <td id="v14-0-1"></td>
+                                        <td id="c14-0-1"></td>
+                                        <td id="t14-0-1"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b1-3" @change="toggle(3, 1, 'b1')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <h3>Board 2 - Motors</h3>
+                                <table style="width:100%">
+                                    <tr>
+                                        <td>Channel</td>
+                                        <td>Voltage</td>
+                                        <td>Current</td>
+                                        <td>Watt</td>
+                                        <td>Switch</td>
+                                    </tr>
+                                    <tr>
+                                        <td>PORT Motor</td>
+                                        <td id="v111"></td>
+                                        <td id="c111"></td>
+                                        <td id="t111"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b2-0" @change="toggle(0, 2, 'b2')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>STBD Motor</td>
+                                        <td id="v122"></td>
+                                        <td id="c122"></td>
+                                        <td id="t122"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b2-1" @change="toggle(1, 2, 'b2')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td id="v133"></td>
+                                        <td id="c133"></td>
+                                        <td id="t133"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" id="toggle-b2-2" @change="toggle(2, 2, 'b2')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td id="v144"></td>
+                                        <td id="c144"></td>
+                                        <td id="t144"></td>
+                                        <td>
+                                            <label class="switch">
+                                                <input type="checkbox" 
+                                                id="toggle-b2-3" @change="toggle(3, 2, 'b2')" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    </table>
+                                    </div>
+                                    </div>
+                                    </div>
+                                    </v-container>
+                                    </v-main>
+                                    </v-app>
+                                    </div>
+                                    <script src="js/vue.js"></script>
+                                    <script src="js/vuetify.js"></script>
+                                    <script src="js/axios.min.js"></script>
+                                    <script>
+                                    Vue.config.devtools = true;
+                                    new Vue({
+                                    el: '#app',
+                                    vuetify: new Vuetify(),
+                                    // data: () => ({
+                                    // // data properties can go here
+                                    // }),
+                                    methods: {
+                                        async toggle(channel, board, id) {
+                                            const state = document.getElementById(`toggle-${id}-${channel}`).checked ? 1 : 0;
+                                            if(board === 0){
+                                                try {
+                                                const response = await axios.post('/v1.0/cam_toggle', {
+                                                cam_num: channel,
+                                                state: state,
+                                                });
+                                                console.log(response.data);
+                                            } catch (error) {
+                                                console.error('Error toggling Camera:', error);
+                                            }
+                                            }else if ( board === 1){
+                                                try {
+                                                const response = await axios.post('/v1.0/led_toggle', {
+                                                led_num: channel,
+                                                state: state,
+                                                });
+                                                console.log(response.data);
+                                            } catch (error) {
+                                                console.error('Error toggling LED:', error);
+                                            }
+                                            }else{
+                                                try {
+                                                const response = await axios.post('/v1.0/motor_toggle', {
+                                                motor_num: channel,
+                                                state: state,
+                                                });
+                                                console.log(response.data);
+                                            } catch (error) {
+                                                console.error('Error toggling Motor:', error);
+                                            }
+                                            }
+                                            
+                                    },
+                                    async fetchSensorData() {
+                                            try {
+                                                const response = await axios.get('/v1.0/sensor_data');
+                                                const data = response.data.sensordata;
+                                                const msg = JSON.parse(data);
+                                            // console.log(msg.current);
+
+                                                document.getElementById("v1").innerHTML = msg.current["0"]["1"]["volt"].toFixed(2);
+                                            document.getElementById("c1").innerHTML = msg.current["0"]["1"]["current"].toFixed(2);
+                                            document.getElementById("t1").innerHTML = msg.current["0"]["1"]["watt"].toFixed(2);
+
+                                            document.getElementById("v2").innerHTML = msg.current["0"]["2"]["volt"].toFixed(2);
+                                            document.getElementById("c2").innerHTML = msg.current["0"]["2"]["current"].toFixed(2);
+                                            document.getElementById("t2").innerHTML = msg.current["0"]["2"]["watt"].toFixed(2);
+
+                                            document.getElementById("v3").innerHTML = msg.current["0"]["3"]["volt"].toFixed(2);
+                                            document.getElementById("c3").innerHTML = msg.current["0"]["3"]["current"].toFixed(2);
+                                            document.getElementById("t3").innerHTML = msg.current["0"]["3"]["watt"].toFixed(2);
+
+                                            document.getElementById("v4").innerHTML = msg.current["0"]["4"]["volt"].toFixed(2);
+                                            document.getElementById("c4").innerHTML = msg.current["0"]["4"]["current"].toFixed(2);
+                                            document.getElementById("t4").innerHTML = msg.current["0"]["4"]["watt"].toFixed(2);
+                                        
+                                            document.getElementById("v11-0-1").innerHTML = msg.current["1"]["1"]["volt"].toFixed(2);
+                                            document.getElementById("c11-0-1").innerHTML = msg.current["1"]["1"]["current"].toFixed(2);
+                                            document.getElementById("t11-0-1").innerHTML = msg.current["1"]["1"]["watt"].toFixed(2);
+
+                                            document.getElementById("v12-0-1").innerHTML = msg.current["1"]["2"]["volt"].toFixed(2);
+                                            document.getElementById("c12-0-1").innerHTML = msg.current["1"]["2"]["current"].toFixed(2);
+                                            document.getElementById("t12-0-1").innerHTML = msg.current["1"]["2"]["watt"].toFixed(2);
+
+                                            document.getElementById("v13-0-1").innerHTML = msg.current["1"]["3"]["volt"].toFixed(2);
+                                            document.getElementById("c13-0-1").innerHTML = msg.current["1"]["3"]["current"].toFixed(2);
+                                            document.getElementById("t13-0-1").innerHTML = msg.current["1"]["3"]["watt"].toFixed(2);
+
+                                            document.getElementById("v14-0-1").innerHTML = msg.current["1"]["4"]["volt"].toFixed(2);
+                                            document.getElementById("c14-0-1").innerHTML = msg.current["1"]["4"]["current"].toFixed(2);
+                                            document.getElementById("t14-0-1").innerHTML = msg.current["1"]["4"]["watt"].toFixed(2);
+
+                                            document.getElementById("v111").innerHTML = msg.current["2"]["1"]["volt"].toFixed(2);
+                                            document.getElementById("c111").innerHTML = msg.current["2"]["1"]["current"].toFixed(2);
+                                            document.getElementById("t111").innerHTML = msg.current["2"]["1"]["watt"].toFixed(2);
+
+                                            document.getElementById("v122").innerHTML = msg.current["2"]["2"]["volt"].toFixed(2);
+                                            document.getElementById("c122").innerHTML = msg.current["2"]["2"]["current"].toFixed(2);
+                                            document.getElementById("t122").innerHTML = msg.current["2"]["2"]["watt"].toFixed(2);
+
+                                            document.getElementById("v133").innerHTML = msg.current["2"]["3"]["volt"].toFixed(2);
+                                            document.getElementById("c133").innerHTML = msg.current["2"]["3"]["current"].toFixed(2);
+                                            document.getElementById("t133").innerHTML = msg.current["2"]["3"]["watt"].toFixed(2);
+
+                                            document.getElementById("v144").innerHTML = msg.current["2"]["4"]["volt"].toFixed(2);
+                                            document.getElementById("c144").innerHTML = msg.current["2"]["4"]["current"].toFixed(2);
+                                            document.getElementById("t144").innerHTML = msg.current["2"]["4"]["watt"].toFixed(2);
+
+                                                // Assuming the sensor data structure has 'current' key with an array of values
+                                            // parsedData.current.forEach((sensor, index) => {
+                                                // document.getElementById(`v${index + 1}`).innerText = sensor.voltage;
+                                                //document.getElementById(`c${index + 1}`).innerText = sensor.current;
+                                                //document.getElementById(`t${index + 1}`).innerText = sensor.watt;
+                                            // });
+
+                                            } catch (error) {
+                                                console.error('Error fetching sensor data:', error);
+                                            }
+                                            }
+                                        },
+                                    });
+                                    </script>
+
+</body>
+</html>
