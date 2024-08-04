@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
 from pydantic import BaseModel
-from app.Stack import Stack
+from Stack import Stack
 
 # Service name for logging
 SERVICE_NAME = "RealTimeSensorDisplay"
@@ -66,9 +66,7 @@ sensor_thread = threading.Thread(target=sensor_data)
 sensor_thread.daemon = True
 sensor_thread.start()
 
-@app.get("/", response_class=FileResponse)
-async def root():
-    return "static/index.html"
+
 
 @app.post("/led_toggle", status_code=status.HTTP_200_OK)
 @version(1, 0)
@@ -118,6 +116,10 @@ app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", 
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+
+@app.get("/", response_class=FileResponse)
+async def root():
+    return "index.html"
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=80, log_config=None)
