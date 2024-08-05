@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 COPY app /app
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install -r /app/requirements.txt
 # RUN python /app/setup.py install  --verbose
 
 EXPOSE 9009/tcp
