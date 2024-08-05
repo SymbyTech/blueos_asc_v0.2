@@ -1,7 +1,9 @@
 FROM python:3.11-slim
 
 COPY app /app
-RUN python /app/setup.py install  --verbose
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+# RUN python /app/setup.py install  --verbose
 
 EXPOSE 9009/tcp
 
