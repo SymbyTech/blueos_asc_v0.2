@@ -5,9 +5,9 @@ RUN pip install --upgrade pip
 RUN pip install -r /app/requirements.txt
 RUN pip install RPi.GPIO
 RUN pip install smbus==1.1.post2
-# RUN python /app/setup.py install  --verbose
+RUN ls /app
 
-EXPOSE 9009/tcp
+EXPOSE 80/tcp
 
 LABEL version="0.0.3"
 
@@ -16,13 +16,13 @@ ARG IMAGE_NAME
 LABEL permissions='\
 {\
   "ExposedPorts": {\
-    "9009/tcp": {}\
+    "80/tcp": {}\
   },\
   "HostConfig": {\
     "Binds":["/usr/blueos/extensions/$IMAGE_NAME:/app"],\
     "ExtraHosts": ["host.docker.internal:host-gateway"],\
     "PortBindings": {\
-      "9009/tcp": [\
+      "80/tcp": [\
         {\
           "HostPort": ""\
         }\
@@ -56,4 +56,4 @@ LABEL links='{\
     }'
 LABEL requirements="core >= 1.1"
 
-ENTRYPOINT cd /app && ls 
+ENTRYPOINT cd /app && python main.py
