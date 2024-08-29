@@ -4,6 +4,7 @@
     "icon":"mdi-clock-fast",
     "company":"Symbytech",
     "version":"1.0.0",
+    "new_page": true,
     "webpage":"https://example.com",
     "api":""
  }
