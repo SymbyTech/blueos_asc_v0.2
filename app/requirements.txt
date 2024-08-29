@@ -7,5 +7,4 @@ starlette==0.13.6
 aiofiles==0.8.0
 Adafruit-PCA9685==1.0.1
 bme280==0.6
-RPi.GPIO==0.7.0
 smbus==1.1.post2
