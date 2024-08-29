@@ -115,7 +115,7 @@ async def get_sensor_data():
 app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 @app.get("/", response_class=FileResponse)
 async def root():
