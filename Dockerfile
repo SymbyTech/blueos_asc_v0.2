@@ -19,8 +19,8 @@ LABEL permissions='\
     "80/tcp": {}\
   },\
   "HostConfig": {\
-    "Binds":["/usr/blueos/extensions/$IMAGE_NAME:/app"],\
-    "ExtraHosts": ["host.docker.internal:host-gateway"],\
+    "Privileged": true,\
+    "Binds":["/root/.config:/root/.config"],\
     "PortBindings": {\
       "80/tcp": [\
         {\
