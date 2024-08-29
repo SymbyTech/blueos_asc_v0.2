@@ -4,6 +4,7 @@ COPY app /app
 RUN pip install --upgrade pip
 RUN pip install -r /app/requirements.txt
 RUN pip install RPi.GPIO
+RUN pip install smbus==1.1.post2
 # RUN python /app/setup.py install  --verbose
 
 EXPOSE 9009/tcp
