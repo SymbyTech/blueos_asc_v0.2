@@ -1,8 +1,8 @@
 {
-    "name":"Argnot Smart Control",
-    "description":"Argnot Smart Control Extension on BlueOS",
+    "name":"Argonot Smart Control",
+    "description":"Argonot Smart Control Extension on BlueOS",
     "icon":"mdi-clock-fast",
-    "company":"Symbytech",
+    "company":"SymbyTech",
     "version":"1.0.0",
     "new_page": true,
     "webpage":"https://example.com",
