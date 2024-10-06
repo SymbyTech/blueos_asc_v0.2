@@ -20,8 +20,8 @@ logger.info(f"Starting {SERVICE_NAME}!")
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Real Time Smart Control and Sensor Display API",
-    description="API for managing real-time sensor data and controls.",
+    title="Argonot Smart Control",
+    description="Smart Control API for Real-time Data and Control Management.",
 )
 
 
