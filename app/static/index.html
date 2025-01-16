@@ -409,7 +409,7 @@
                 },
                 async startJoystick() {
                     try {
-                        const response = await fetch('/start-joystick', { method: 'POST' });
+                        const response = await axios.post('/v1.0/start_joystick');
                         const data = await response.json();
                         if (response.ok) {
                             this.joystickRunning = true;
@@ -426,7 +426,7 @@
                 },
                 async stopJoystick() {
                     try {
-                        const response = await fetch('/stop-joystick', { method: 'POST' });
+                        const response = await axios.post('/v1.0/stop_joystick');
                         const data = await response.json();
                         if (response.ok) {
                             this.joystickRunning = false;
@@ -443,7 +443,7 @@
                 },
                 async startMotion() {
                     try {
-                        const response = await fetch('/start-motion', { method: 'POST' });
+                        const response = await axios.post('/v1.0/start_motion');
                         const data = await response.json();
                         if (response.ok) {
                             this.motionRunning = true;
@@ -460,7 +460,7 @@
                 },
                 async stopMotion() {
                     try {
-                        const response = await fetch('/stop-motion', { method: 'POST' });
+                        const response = await axios.post('/v1.0/stop_motion');
                         const data = await response.json();
                         if (response.ok) {
                             this.motionRunning = false;
@@ -480,69 +480,28 @@
                         const response = await axios.get('/v1.0/sensor_data');
                         const data = response.data.sensordata;
                         const msg = JSON.parse(data);
-                        // console.log(msg.current);
-                        // Assuming the sensor data structure has 'current' key with an array of values
-                        this.sensorData = Object.values(msg.current).map((sensor) => ({
-                            voltage: sensor.volt,
-                            current: sensor.current,
-                            watt: sensor.watt,
-                        }));
 
-                        document.getElementById("v1").innerHTML = msg.current["0"]["1"]["volt"].toFixed(2);
-                        document.getElementById("c1").innerHTML = msg.current["0"]["1"]["current"].toFixed(2);
-                        document.getElementById("t1").innerHTML = msg.current["0"]["1"]["watt"].toFixed(2);
+                        // Update the sensorData array with the new data
+                        this.sensorData = [];
+                        for (const board in msg.current) {
+                            for (const channel in msg.current[board]) {
+                                const sensor = msg.current[board][channel];
+                                this.sensorData.push({
+                                    voltage: sensor.volt,
+                                    current: sensor.current,
+                                    watt: sensor.watt,
+                                });
 
-                        document.getElementById("v2").innerHTML = msg.current["0"]["2"]["volt"].toFixed(2);
-                        document.getElementById("c2").innerHTML = msg.current["0"]["2"]["current"].toFixed(2);
-                        document.getElementById("t2").innerHTML = msg.current["0"]["2"]["watt"].toFixed(2);
+                                // Update the HTML elements with the new data
+                                const vId = `v${board}${channel}`;
+                                const cId = `c${board}${channel}`;
+                                const tId = `t${board}${channel}`;
 
-                        document.getElementById("v3").innerHTML = msg.current["0"]["3"]["volt"].toFixed(2);
-                        document.getElementById("c3").innerHTML = msg.current["0"]["3"]["current"].toFixed(2);
-                        document.getElementById("t3").innerHTML = msg.current["0"]["3"]["watt"].toFixed(2);
-
-                        document.getElementById("v4").innerHTML = msg.current["0"]["4"]["volt"].toFixed(2);
-                        document.getElementById("c4").innerHTML = msg.current["0"]["4"]["current"].toFixed(2);
-                        document.getElementById("t4").innerHTML = msg.current["0"]["4"]["watt"].toFixed(2);
-
-                        document.getElementById("v11-0-1").innerHTML = msg.current["1"]["1"]["volt"].toFixed(2);
-                        document.getElementById("c11-0-1").innerHTML = msg.current["1"]["1"]["current"].toFixed(2);
-                        document.getElementById("t11-0-1").innerHTML = msg.current["1"]["1"]["watt"].toFixed(2);
-
-                        document.getElementById("v12-0-1").innerHTML = msg.current["1"]["2"]["volt"].toFixed(2);
-                        document.getElementById("c12-0-1").innerHTML = msg.current["1"]["2"]["current"].toFixed(2);
-                        document.getElementById("t12-0-1").innerHTML = msg.current["1"]["2"]["watt"].toFixed(2);
-
-                        document.getElementById("v13-0-1").innerHTML = msg.current["1"]["3"]["volt"].toFixed(2);
-                        document.getElementById("c13-0-1").innerHTML = msg.current["1"]["3"]["current"].toFixed(2);
-                        document.getElementById("t13-0-1").innerHTML = msg.current["1"]["3"]["watt"].toFixed(2);
-
-                        document.getElementById("v14-0-1").innerHTML = msg.current["1"]["4"]["volt"].toFixed(2);
-                        document.getElementById("c14-0-1").innerHTML = msg.current["1"]["4"]["current"].toFixed(2);
-                        document.getElementById("t14-0-1").innerHTML = msg.current["1"]["4"]["watt"].toFixed(2);
-
-                        document.getElementById("v111").innerHTML = msg.current["2"]["1"]["volt"].toFixed(2);
-                        document.getElementById("c111").innerHTML = msg.current["2"]["1"]["current"].toFixed(2);
-                        document.getElementById("t111").innerHTML = msg.current["2"]["1"]["watt"].toFixed(2);
-
-                        document.getElementById("v122").innerHTML = msg.current["2"]["2"]["volt"].toFixed(2);
-                        document.getElementById("c122").innerHTML = msg.current["2"]["2"]["current"].toFixed(2);
-                        document.getElementById("t122").innerHTML = msg.current["2"]["2"]["watt"].toFixed(2);
-
-                        document.getElementById("v133").innerHTML = msg.current["2"]["3"]["volt"].toFixed(2);
-                        document.getElementById("c133").innerHTML = msg.current["2"]["3"]["current"].toFixed(2);
-                        document.getElementById("t133").innerHTML = msg.current["2"]["3"]["watt"].toFixed(2);
-
-                        document.getElementById("v144").innerHTML = msg.current["2"]["4"]["volt"].toFixed(2);
-                        document.getElementById("c144").innerHTML = msg.current["2"]["4"]["current"].toFixed(2);
-                        document.getElementById("t144").innerHTML = msg.current["2"]["4"]["watt"].toFixed(2);
-
-                        // Assuming the sensor data structure has 'current' key with an array of values
-                        // parsedData.current.forEach((sensor, index) => {
-                        // document.getElementById(`v${index + 1}`).innerText = sensor.voltage;
-                        //document.getElementById(`c${index + 1}`).innerText = sensor.current;
-                        //document.getElementById(`t${index + 1}`).innerText = sensor.watt;
-                        // });
-
+                                document.getElementById(vId).innerHTML = sensor.volt.toFixed(2);
+                                document.getElementById(cId).innerHTML = sensor.current.toFixed(2);
+                                document.getElementById(tId).innerHTML = sensor.watt.toFixed(2);
+                            }
+                        }
                     } catch (error) {
                         console.error('Error fetching sensor data:', error);
                     }

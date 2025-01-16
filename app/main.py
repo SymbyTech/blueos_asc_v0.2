@@ -71,7 +71,8 @@ sensor_thread.start()
 
 
 # Post Request to handle joystick start script and stop script
-@app.post("/start-joystick")
+@app.post("/start_joystick")
+@version(1, 0)
 async def start_joystick():
     global joystick_process
     if joystick_process and joystick_process.poll() is None:
@@ -83,7 +84,8 @@ async def start_joystick():
         return {"status": "error", "message": str(e)}
     
 
-@app.post("/stop-joystick")
+@app.post("/stop_joystick")
+@version(1, 0)
 async def stop_joystick():
     global joystick_process
     if joystick_process and joystick_process.poll() is None:
@@ -93,7 +95,8 @@ async def stop_joystick():
     return {"status": "error", "message": "Joystick server is not running."}
 
 # Post Request to handle motion start script and stop script
-@app.post("/start-motion")
+@app.post("/start_motion")
+@version(1, 0)
 async def start_motion():
     global motion_process
     if motion_process and motion_process.poll() is None:
@@ -104,7 +107,8 @@ async def start_motion():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.post("/stop-motion")
+@app.post("/stop_motion")
+@version(1, 0)
 async def stop_motion():
     global motion_process
     if motion_process and motion_process.poll() is None:
