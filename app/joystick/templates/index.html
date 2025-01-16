@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center; /* Center the overall layout */
+            /* color: white; */
+        }
+        .controller-data {
+            margin-top: 10px;
+            text-align: left; /* Override inherited center alignment */
+            display: block; /* Ensure the section aligns left */
+        }
+        .axis-data, .button-data {
+            margin: 10px 0;
+            font-size: 14px; /* Reduced font size */
+        }
+        h2 {
+            display: inline-block; /* Keep the header on the same line as the data */
+            font-size: 14px; /* Set font size */
+            margin: 0 10px 0 0; /* Add spacing between header and data */
+        }
+        .data-line {
+            margin: 5px 0; /* Add spacing between each line of data */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controller-data">
+        <div class="data-line">
+            <h2>Axis Data:</h2>
+            <span id="axis-data" class="axis-data"></span>
+        </div>
+        <div class="data-line">
+            <h2>Button Data:</h2>
+            <span id="button-data" class="button-data"></span>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <script>
+        let socket = io();
+
+        let controllerConnected = false;
+
+        window.addEventListener("gamepadconnected", (event) => {
+            controllerConnected = true;
+            console.log("Gamepad connected!");
+            updateControllerData();
+        });
+
+        window.addEventListener("gamepaddisconnected", (event) => {
+            controllerConnected = false;
+            console.log("Gamepad disconnected!");
+        });
+
+        function updateControllerData() {
+            if (controllerConnected) {
+                const gamepads = navigator.getGamepads();
+                const gp = gamepads[0];
+
+                // Display axis data horizontally
+                let axisDataHtml = "";
+                gp.axes.forEach((axis, index) => {
+                    axisDataHtml += `Axis ${index}: ${axis.toFixed(2)} `;
+                });
+                document.getElementById('axis-data').innerText = axisDataHtml;
+
+                // Display button data horizontally
+                let buttonDataHtml = "";
+                gp.buttons.forEach((button, index) => {
+                    let valueDisplay = button.value !== undefined ? button.value.toFixed(2) : button.pressed;
+                    buttonDataHtml += `Button ${index}: ${valueDisplay} `;
+                });
+                document.getElementById('button-data').innerText = buttonDataHtml;
+
+                // Send data to the server via WebSocket
+                socket.emit('joystick_data', {
+                    axes: gp.axes.map((axis, index) => ({ index, value: axis.toFixed(2) })),
+                    buttons: gp.buttons.map((button, index) => ({
+                        index,
+                        value: button.value !== undefined ? button.value.toFixed(2) : button.pressed
+                    }))
+                });
+
+                // Request next frame update
+                requestAnimationFrame(updateControllerData);
+            }
+        }
+
+        // Optionally, listen for server responses
+        socket.on('joystick_response', (data) => {
+            console.log('Server response:', data);
+        });
+    </script>
+
+</body>
+</html>

@@ -26,5 +26,9 @@ setup(
         "bme280==0.6",
         "RPi.GPIO==0.7.0",
         "smbus==1.1.post2",
+        "flask==3.0.3",
+        "Flask-SocketIO==5.4.1",
+        "python-socketio==5.11.4",
+        "pyserial==3.5",
     ],
 )

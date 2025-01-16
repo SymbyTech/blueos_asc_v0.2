@@ -88,8 +88,31 @@
     <div id="app">
         <v-app>
             <v-main>
+                <h1>Argonot Smart Control </h1>
                 <v-container>
-                    <h1>Argonot Smart Control </h1>
+                    <h2>Motor Scripts Control Panel</h2>
+                    <v-alert v-if="message" :type="alertType" dismissible>{{ message }}</v-alert>
+                    
+                    <!-- Joystick Server Controls -->
+                    <v-card class="mb-4">
+                        <v-card-title>Joystick Server</v-card-title>
+                        <v-card-text>
+                            <v-btn color="success" @click="startJoystick" :disabled="joystickRunning">Start Joystick Server</v-btn>
+                            <v-btn color="error" @click="stopJoystick" :disabled="!joystickRunning">Stop Joystick Server</v-btn>
+                        </v-card-text>
+                    </v-card>
+    
+                    <!-- Motion Script Controls -->
+                    <v-card>
+                        <v-card-title>Motion Script</v-card-title>
+                        <v-card-text>
+                            <v-btn color="success" @click="startMotion" :disabled="motionRunning">Start Motion Script</v-btn>
+                            <v-btn color="error" @click="stopMotion" :disabled="!motionRunning">Stop Motion Script</v-btn>
+                        </v-card-text>
+                    </v-card>
+                </v-container>
+                <v-container>
+                    
                     <div class="container">
                         <div class="hero">
                             <div class="chart-container">
@@ -174,6 +197,13 @@
                                         </td>
                                     </tr>
                                     <tr>
+                                        <td>Brightness</td>
+                                        <td colspan="4">
+                                            <v-slider v-model="brightness[0]" :min="0" :max="100" label="Brightness"
+                                                @change="setBrightness(0)" thumb-label></v-slider>
+                                        </td>
+                                    </tr>
+                                    <tr>
                                         <td>LED 2</td>
                                         <td id="v12-0-1"></td>
                                         <td id="c12-0-1"></td>
@@ -186,6 +216,13 @@
                                         </td>
                                     </tr>
                                     <tr>
+                                        <td>Brightness</td>
+                                        <td colspan="4">
+                                            <v-slider v-model="brightness[1]" :min="0" :max="100" label="Brightness"
+                                                @change="setBrightness(1)" thumb-label></v-slider>
+                                        </td>
+                                    </tr>
+                                    <tr>
                                         <td>LED 3</td>
                                         <td id="v13-0-1"></td>
                                         <td id="c13-0-1"></td>
@@ -195,6 +232,13 @@
                                                 <input type="checkbox" id="toggle-b1-2" @change="toggle(2, 1, 'b1')" />
                                                 <span class="slider round"></span>
                                             </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Brightness</td>
+                                        <td colspan="4">
+                                            <v-slider v-model="brightness[2]" :min="0" :max="100" label="Brightness"
+                                                @change="setBrightness(2)" thumb-label></v-slider>
                                         </td>
                                     </tr>
                                     <tr>
@@ -212,8 +256,8 @@
                                     <tr>
                                         <td>Brightness</td>
                                         <td colspan="4">
-                                            <v-slider v-model="brightness" :min="0" :max="100" label="Brightness"
-                                                @change="setBrightness" thumb-label></v-slider>
+                                            <v-slider v-model="brightness[3]" :min="0" :max="100" label="Brightness"
+                                                @change="setBrightness(3)" thumb-label></v-slider>
                                         </td>
                                     </tr>
                                 </table>
@@ -280,6 +324,23 @@
                         </div>
                     </div>
                 </v-container>
+                <v-container>
+                    <h3>Sensor Data</h3>
+                    <table style="width:100%">
+                        <tr>
+                            <th>Channel</th>
+                            <th>Voltage</th>
+                            <th>Current</th>
+                            <th>Watt</th>
+                        </tr>
+                        <tr v-for="(sensor, index) in sensorData" :key="index">
+                            <td>{{ index + 1 }}</td>
+                            <td>{{ sensor.voltage.toFixed(2) }}</td>
+                            <td>{{ sensor.current.toFixed(2) }}</td>
+                            <td>{{ sensor.watt.toFixed(2) }}</td>
+                        </tr>
+                    </table>
+                </v-container>
             </v-main>
         </v-app>
     </div>
@@ -292,7 +353,12 @@
             el: '#app',
             vuetify: new Vuetify(),
             data: {
-                brightness: 50  // Default brightness value
+                brightness: [0, 0, 0, 0],  // Default brightness values for each LED
+                joystickRunning: false,
+                motionRunning: false,
+                message: '',
+                alertType: '',
+                sensorData: [], 
             },
             methods: {
                 async toggle(channel, board, id) {
@@ -330,14 +396,83 @@
                     }
 
                 },
-                async setBrightness() {
+                async setBrightness(channel) {
                     try {
                         const response = await axios.post('/v1.0/led_brightness', {
-                            brightness: this.brightness
+                            channel: channel,
+                            brightness: this.brightness[channel]
                         });
-                        console.log('Brightness set to:', this.brightness, response.data);
+                        console.log(`Brightness for channel ${channel} set to:`, this.brightness[channel], response.data);
                     } catch (error) {
-                        console.error('Error setting brightness:', error);
+                        console.error(`Error setting brightness for channel ${channel}:`, error);
+                    }
+                },
+                async startJoystick() {
+                    try {
+                        const response = await fetch('/start-joystick', { method: 'POST' });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.joystickRunning = true;
+                            this.message = data.message;
+                            this.alertType = 'success';
+                        } else {
+                            this.message = data.message;
+                            this.alertType = 'error';
+                        }
+                    } catch (error) {
+                        this.message = `Error: ${error.message}`;
+                        this.alertType = 'error';
+                    }
+                },
+                async stopJoystick() {
+                    try {
+                        const response = await fetch('/stop-joystick', { method: 'POST' });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.joystickRunning = false;
+                            this.message = data.message;
+                            this.alertType = 'success';
+                        } else {
+                            this.message = data.message;
+                            this.alertType = 'error';
+                        }
+                    } catch (error) {
+                        this.message = `Error: ${error.message}`;
+                        this.alertType = 'error';
+                    }
+                },
+                async startMotion() {
+                    try {
+                        const response = await fetch('/start-motion', { method: 'POST' });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.motionRunning = true;
+                            this.message = data.message;
+                            this.alertType = 'success';
+                        } else {
+                            this.message = data.message;
+                            this.alertType = 'error';
+                        }
+                    } catch (error) {
+                        this.message = `Error: ${error.message}`;
+                        this.alertType = 'error';
+                    }
+                },
+                async stopMotion() {
+                    try {
+                        const response = await fetch('/stop-motion', { method: 'POST' });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.motionRunning = false;
+                            this.message = data.message;
+                            this.alertType = 'success';
+                        } else {
+                            this.message = data.message;
+                            this.alertType = 'error';
+                        }
+                    } catch (error) {
+                        this.message = `Error: ${error.message}`;
+                        this.alertType = 'error';
                     }
                 },
                 async fetchSensorData() {
@@ -346,6 +481,12 @@
                         const data = response.data.sensordata;
                         const msg = JSON.parse(data);
                         // console.log(msg.current);
+                        // Assuming the sensor data structure has 'current' key with an array of values
+                        this.sensorData = Object.values(msg.current).map((sensor) => ({
+                            voltage: sensor.volt,
+                            current: sensor.current,
+                            watt: sensor.watt,
+                        }));
 
                         document.getElementById("v1").innerHTML = msg.current["0"]["1"]["volt"].toFixed(2);
                         document.getElementById("c1").innerHTML = msg.current["0"]["1"]["current"].toFixed(2);

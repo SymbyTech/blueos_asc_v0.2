@@ -11,7 +11,8 @@ from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
 from pydantic import BaseModel
 from Stack import Stack
-
+import subprocess
+import os
 # Service name for logging
 SERVICE_NAME = "RealTimeSensorDisplay"
 
@@ -24,7 +25,9 @@ app = FastAPI(
     description="Smart Control API for Real-time Data and Control Management.",
 )
 
-
+# Global variable to store the subprocess
+joystick_process = None
+motion_process = None
 # Initialize Stack instance
 stack = Stack()
 
@@ -67,6 +70,48 @@ sensor_thread.daemon = True
 sensor_thread.start()
 
 
+# Post Request to handle joystick start script and stop script
+@app.post("/start-joystick")
+async def start_joystick():
+    global joystick_process
+    if joystick_process and joystick_process.poll() is None:
+        return {"status": "error", "message": "Joystick server is already running."}
+    try:
+        joystick_process = subprocess.Popen(["python3", "joystick/joystick.py"], cwd=os.path.dirname(__file__))
+        return {"status": "success", "message": "Joystick server started."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    
+
+@app.post("/stop-joystick")
+async def stop_joystick():
+    global joystick_process
+    if joystick_process and joystick_process.poll() is None:
+        joystick_process.terminate()
+        joystick_process = None
+        return {"status": "success", "message": "Joystick server stopped."}
+    return {"status": "error", "message": "Joystick server is not running."}
+
+# Post Request to handle motion start script and stop script
+@app.post("/start-motion")
+async def start_motion():
+    global motion_process
+    if motion_process and motion_process.poll() is None:
+        return {"status": "error", "message": "Motion script is already running."}
+    try:
+        motion_process = subprocess.Popen(["python3", "motion.py"], cwd=os.path.dirname(__file__))
+        return {"status": "success", "message": "Motion script started."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/stop-motion")
+async def stop_motion():
+    global motion_process
+    if motion_process and motion_process.poll() is None:
+        motion_process.terminate()
+        motion_process = None
+        return {"status": "success", "message": "Motion script stopped."}
+    return {"status": "error", "message": "Motion script is not running."}
 
 @app.post("/led_toggle", status_code=status.HTTP_200_OK)
 @version(1, 0)
