@@ -16,4 +16,4 @@ def handle_joystick_data(data):
     emit('joystick_response', data, broadcast=True)
 
 if __name__ == '__main__':
-    socketio.run(app, port=9009, host='0.0.0.0', debug=True)
+    socketio.run(app, port=9009, host='0.0.0.0')

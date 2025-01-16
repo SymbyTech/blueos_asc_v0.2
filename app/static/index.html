@@ -497,9 +497,13 @@
                                 const cId = `c${board}${channel}`;
                                 const tId = `t${board}${channel}`;
 
-                                document.getElementById(vId).innerHTML = sensor.volt.toFixed(2);
-                                document.getElementById(cId).innerHTML = sensor.current.toFixed(2);
-                                document.getElementById(tId).innerHTML = sensor.watt.toFixed(2);
+                                const vElement = document.getElementById(vId);
+                                const cElement = document.getElementById(cId);
+                                const tElement = document.getElementById(tId);
+
+                                if (vElement) vElement.innerHTML = sensor.volt.toFixed(2);
+                                if (cElement) cElement.innerHTML = sensor.current.toFixed(2);
+                                if (tElement) tElement.innerHTML = sensor.watt.toFixed(2);
                             }
                         }
                     } catch (error) {
