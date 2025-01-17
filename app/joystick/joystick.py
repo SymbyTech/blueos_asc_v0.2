@@ -16,4 +16,6 @@ def handle_joystick_data(data):
     emit('joystick_response', data, broadcast=True)
 
 if __name__ == '__main__':
+    import eventlet
+    import eventlet.wsgi
     socketio.run(app, port=9009, host='0.0.0.0')
