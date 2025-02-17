@@ -2,522 +2,557 @@
 <html>
 
 <head>
-    <title>Real Time Sensor Display</title>
-    <link href="css/vuetify.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
-</head>
-
-<style>
+  <title>Real Time Sensor Display</title>
+  <link href="css/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <style>
+    /* Existing styles */
     .v-card {
-        padding: 20px;
+      padding: 20px;
+    
     }
 
     h1 {
-        margin-bottom: 30px;
-        text-align: center;
+      margin-bottom: 30px;
+      text-align: center;
+      color: white;
     }
 
     .container {
-        width: 100%;
-        margin: 0 auto;
+      width: 100%;
+      margin: 0 auto;
+      
     }
 
     .hero {
-        text-align: center;
+      text-align: center;
     }
 
     .switch {
-        position: relative;
-        display: inline-block;
-        width: 40px;
-        height: 10px;
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 10px;
     }
 
     .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
 
     .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        -webkit-transition: .4s;
-        transition: .4s;
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      -webkit-transition: .4s;
+      transition: .4s;
     }
 
     .slider:before {
-        position: absolute;
-        content: "";
-        height: 10px;
-        width: 16px;
-        background-color: white;
-        -webkit-transition: .4s;
-        transition: .4s;
+      position: absolute;
+      content: "";
+      height: 10px;
+      width: 16px;
+      background-color: white;
+      -webkit-transition: .4s;
+      transition: .4s;
     }
 
-    input:checked+.slider {
-        background-color: #f32121;
+    input:checked + .slider {
+      background-color: #f32121;
     }
 
-    input:focus+.slider {
-        box-shadow: 0 0 1px #f32121;
+    input:focus + .slider {
+      box-shadow: 0 0 1px #f32121;
     }
 
-    input:checked+.slider:before {
-        -webkit-transform: translateX(26px);
-        -ms-transform: translateX(26px);
-        transform: translateX(26px);
+    input:checked + .slider:before {
+      -webkit-transform: translateX(26px);
+      -ms-transform: translateX(26px);
+      transform: translateX(26px);
     }
 
     .slider.round {
-        border-radius: 34px;
+      border-radius: 34px;
     }
 
     .slider.round:before {
-        border-radius: 50%;
+      border-radius: 50%;
     }
-</style>
+.v-expansion-panel{
+    background-color: black !important;
+    color: white !important;
+}
+
+
+    /* New background and floating bubbles */
+    #app {
+  background: #37bfecd5;
+  overflow: hidden;
+  position: relative;
+}
+
+
+
+  </style>
+</head>
 
 <body>
-    <div id="app">
-        <v-app>
-            <v-main>
-                <h1>Argonot Smart Control </h1>
-                <v-container>
-                    <h2>Motor Scripts Control Panel</h2>
-                    <v-alert v-if="message" :type="alertType" dismissible>{{ message }}</v-alert>
-                    
-                    <!-- Joystick Server Controls -->
+
+
+  <div id="app">
+ 
+    <v-app>
+      <v-main>
+        <v-container>
+          <h1>Argonot Smart Control</h1>
+          <v-alert v-if="message" :type="alertType" dismissible>{{ message }}</v-alert>
+
+          <!-- Expansion panels (all open by default) -->
+          <v-expansion-panels v-model="panels" multiple >
+            <!-- Motor Scripts Control Panel -->
+            <v-expansion-panel>
+              <v-expansion-panel-header>Motor Scripts Control Panel</v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-row>
+                  <v-col cols="12" md="6">
                     <v-card class="mb-4">
-                        <v-card-title>Joystick Server</v-card-title>
-                        <v-card-text>
-                            <v-btn color="success" @click="startJoystick" :disabled="joystickRunning">Start Joystick Server</v-btn>
-                            <v-btn color="error" @click="stopJoystick" :disabled="!joystickRunning">Stop Joystick Server</v-btn>
-                        </v-card-text>
+                      <v-card-title>Joystick Server</v-card-title>
+                      <v-card-text>
+                        <v-btn color="success" @click="startJoystick" :disabled="joystickRunning">Start
+                          Joystick Server</v-btn>
+                        <v-btn color="error" @click="stopJoystick" :disabled="!joystickRunning">Stop
+                          Joystick Server</v-btn>
+                      </v-card-text>
                     </v-card>
-    
-                    <!-- Motion Script Controls -->
+                  </v-col>
+                  <v-col cols="12" md="6">
                     <v-card>
-                        <v-card-title>Motion Script</v-card-title>
-                        <v-card-text>
-                            <v-btn color="success" @click="startMotion" :disabled="motionRunning">Start Motion Script</v-btn>
-                            <v-btn color="error" @click="stopMotion" :disabled="!motionRunning">Stop Motion Script</v-btn>
-                        </v-card-text>
+                      <v-card-title>Motion Script</v-card-title>
+                      <v-card-text>
+                        <v-btn color="success" @click="startMotion" :disabled="motionRunning">Start Motion
+                          Script</v-btn>
+                        <v-btn color="error" @click="stopMotion" :disabled="!motionRunning">Stop Motion
+                          Script</v-btn>
+                      </v-card-text>
                     </v-card>
-                </v-container>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <!-- Board 0 - Cameras -->
+            <v-expansion-panel>
+              <v-expansion-panel-header>Board 0 - Cameras</v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <div class="chart-container">
+                  <table style="width:100%">
+                    <tr>
+                      <th>Channel</th>
+                      <th>Voltage</th>
+                      <th>Current</th>
+                      <th>Watt</th>
+                      <th>Switch</th>
+                    </tr>
+                    <tr>
+                      <td>1</td>
+                      <td id="v1"></td>
+                      <td id="c1"></td>
+                      <td id="t1"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b0-0" @change="toggle(0, 0, 'b0')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td id="v2"></td>
+                      <td id="c2"></td>
+                      <td id="t2"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b0-1" @change="toggle(1, 0, 'b0')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td id="v3"></td>
+                      <td id="c3"></td>
+                      <td id="t3"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b0-2" @change="toggle(2, 0, 'b0')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>4</td>
+                      <td id="v4"></td>
+                      <td id="c4"></td>
+                      <td id="t4"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b0-3" @change="toggle(3, 0, 'b0')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <!-- Board 1 - LEDs -->
+            <v-expansion-panel>
+              <v-expansion-panel-header>Board 1 - LEDs</v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <div class="chart-container">
+                  <table style="width:100%">
+                    <tr>
+                      <th>Channel</th>
+                      <th>Voltage</th>
+                      <th>Current</th>
+                      <th>Watt</th>
+                      <th>Switch</th>
+                    </tr>
+                    <tr>
+                      <td>LED 1</td>
+                      <td id="v11-0-1"></td>
+                      <td id="c11-0-1"></td>
+                      <td id="t11-0-1"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b1-0" @change="toggle(0, 1, 'b1')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Brightness</td>
+                      <td colspan="4">
+                        <v-slider v-model="brightness[0]" :min="0" :max="100" label="Brightness"
+                          @change="setBrightness(0)" thumb-label></v-slider>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>LED 2</td>
+                      <td id="v12-0-1"></td>
+                      <td id="c12-0-1"></td>
+                      <td id="t12-0-1"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b1-1" @change="toggle(1, 1, 'b1')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Brightness</td>
+                      <td colspan="4">
+                        <v-slider v-model="brightness[1]" :min="0" :max="100" label="Brightness"
+                          @change="setBrightness(1)" thumb-label></v-slider>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>LED 3</td>
+                      <td id="v13-0-1"></td>
+                      <td id="c13-0-1"></td>
+                      <td id="t13-0-1"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b1-2" @change="toggle(2, 1, 'b1')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Brightness</td>
+                      <td colspan="4">
+                        <v-slider v-model="brightness[2]" :min="0" :max="100" label="Brightness"
+                          @change="setBrightness(2)" thumb-label></v-slider>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>LED 4</td>
+                      <td id="v14-0-1"></td>
+                      <td id="c14-0-1"></td>
+                      <td id="t14-0-1"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b1-3" @change="toggle(3, 1, 'b1')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Brightness</td>
+                      <td colspan="4">
+                        <v-slider v-model="brightness[3]" :min="0" :max="100" label="Brightness"
+                          @change="setBrightness(3)" thumb-label></v-slider>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <!-- Board 2 - Motors -->
+            <v-expansion-panel>
+              <v-expansion-panel-header>Board 2 - Motors</v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <div class="chart-container">
+                  <table style="width:100%">
+                    <tr>
+                      <th>Channel</th>
+                      <th>Voltage</th>
+                      <th>Current</th>
+                      <th>Watt</th>
+                      <th>Switch</th>
+                    </tr>
+                    <tr>
+                      <td>PORT Motor</td>
+                      <td id="v111"></td>
+                      <td id="c111"></td>
+                      <td id="t111"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b2-0" @change="toggle(0, 2, 'b2')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>STBD Motor</td>
+                      <td id="v122"></td>
+                      <td id="c122"></td>
+                      <td id="t122"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b2-1" @change="toggle(1, 2, 'b2')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td id="v133"></td>
+                      <td id="c133"></td>
+                      <td id="t133"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b2-2" @change="toggle(2, 2, 'b2')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>4</td>
+                      <td id="v144"></td>
+                      <td id="c144"></td>
+                      <td id="t144"></td>
+                      <td>
+                        <label class="switch">
+                          <input type="checkbox" id="toggle-b2-3" @change="toggle(3, 2, 'b2')" />
+                          <span class="slider round"></span>
+                        </label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <!-- Sensor Data -->
+            <v-expansion-panel>
+              <v-expansion-panel-header>Sensor Data</v-expansion-panel-header>
+              <v-expansion-panel-content>
                 <v-container>
-                    
-                    <div class="container">
-                        <div class="hero">
-                            <div class="chart-container">
-                                <h3>Board 0 - Cameras</h3>
-                                <table style="width:100%">
-                                    <tr>
-                                        <td>Channel</td>
-                                        <td>Voltage</td>
-                                        <td>Current</td>
-                                        <td>Watt</td>
-                                        <td>Switch</td>
-                                    </tr>
-                                    <tr>
-                                        <td>1</td>
-                                        <td id="v1"></td>
-                                        <td id="c1"></td>
-                                        <td id="t1"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b0-0" @change="toggle(0, 0, 'b0')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td id="v2"></td>
-                                        <td id="c2"></td>
-                                        <td id="t2"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b0-1" @change="toggle(1, 0, 'b0')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td id="v3"></td>
-                                        <td id="c3"></td>
-                                        <td id="t3"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b0-2" @change="toggle(2, 0, 'b0')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>4</td>
-                                        <td id="v4"></td>
-                                        <td id="c4"></td>
-                                        <td id="t4"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b0-3" @change="toggle(3, 0, 'b0')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <h3>Board 1 - LEDS</h3>
-                                <table style="width:100%">
-                                    <tr>
-                                        <td>Channel</td>
-                                        <td>Voltage</td>
-                                        <td>Current</td>
-                                        <td>Watt</td>
-                                        <td>Switch</td>
-                                    </tr>
-                                    <tr>
-                                        <td>LED 1</td>
-                                        <td id="v11-0-1"></td>
-                                        <td id="c11-0-1"></td>
-                                        <td id="t11-0-1"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b1-0" @change="toggle(0, 1, 'b1')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Brightness</td>
-                                        <td colspan="4">
-                                            <v-slider v-model="brightness[0]" :min="0" :max="100" label="Brightness"
-                                                @change="setBrightness(0)" thumb-label></v-slider>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>LED 2</td>
-                                        <td id="v12-0-1"></td>
-                                        <td id="c12-0-1"></td>
-                                        <td id="t12-0-1"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b1-1" @change="toggle(1, 1, 'b1')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Brightness</td>
-                                        <td colspan="4">
-                                            <v-slider v-model="brightness[1]" :min="0" :max="100" label="Brightness"
-                                                @change="setBrightness(1)" thumb-label></v-slider>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>LED 3</td>
-                                        <td id="v13-0-1"></td>
-                                        <td id="c13-0-1"></td>
-                                        <td id="t13-0-1"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b1-2" @change="toggle(2, 1, 'b1')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Brightness</td>
-                                        <td colspan="4">
-                                            <v-slider v-model="brightness[2]" :min="0" :max="100" label="Brightness"
-                                                @change="setBrightness(2)" thumb-label></v-slider>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>LED 4</td>
-                                        <td id="v14-0-1"></td>
-                                        <td id="c14-0-1"></td>
-                                        <td id="t14-0-1"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b1-3" @change="toggle(3, 1, 'b1')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Brightness</td>
-                                        <td colspan="4">
-                                            <v-slider v-model="brightness[3]" :min="0" :max="100" label="Brightness"
-                                                @change="setBrightness(3)" thumb-label></v-slider>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <h3>Board 2 - Motors</h3>
-                                <table style="width:100%">
-                                    <tr>
-                                        <td>Channel</td>
-                                        <td>Voltage</td>
-                                        <td>Current</td>
-                                        <td>Watt</td>
-                                        <td>Switch</td>
-                                    </tr>
-                                    <tr>
-                                        <td>PORT Motor</td>
-                                        <td id="v111"></td>
-                                        <td id="c111"></td>
-                                        <td id="t111"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b2-0" @change="toggle(0, 2, 'b2')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>STBD Motor</td>
-                                        <td id="v122"></td>
-                                        <td id="c122"></td>
-                                        <td id="t122"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b2-1" @change="toggle(1, 2, 'b2')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td id="v133"></td>
-                                        <td id="c133"></td>
-                                        <td id="t133"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b2-2" @change="toggle(2, 2, 'b2')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>4</td>
-                                        <td id="v144"></td>
-                                        <td id="c144"></td>
-                                        <td id="t144"></td>
-                                        <td>
-                                            <label class="switch">
-                                                <input type="checkbox" id="toggle-b2-3" @change="toggle(3, 2, 'b2')" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                  <table style="width:100%">
+                    <tr>
+                      <th>Channel</th>
+                      <th>Voltage</th>
+                      <th>Current</th>
+                      <th>Watt</th>
+                    </tr>
+                    <tr v-for="(sensor, index) in sensorData" :key="index">
+                      <td>{{ index + 1 }}</td>
+                      <td>{{ sensor.voltage.toFixed(2) }}</td>
+                      <td>{{ sensor.current.toFixed(2) }}</td>
+                      <td>{{ sensor.watt.toFixed(2) }}</td>
+                    </tr>
+                  </table>
                 </v-container>
-                <v-container>
-                    <h3>Sensor Data</h3>
-                    <table style="width:100%">
-                        <tr>
-                            <th>Channel</th>
-                            <th>Voltage</th>
-                            <th>Current</th>
-                            <th>Watt</th>
-                        </tr>
-                        <tr v-for="(sensor, index) in sensorData" :key="index">
-                            <td>{{ index + 1 }}</td>
-                            <td>{{ sensor.voltage.toFixed(2) }}</td>
-                            <td>{{ sensor.current.toFixed(2) }}</td>
-                            <td>{{ sensor.watt.toFixed(2) }}</td>
-                        </tr>
-                    </table>
-                </v-container>
-            </v-main>
-        </v-app>
-    </div>
-    <script src="js/vue.js"></script>
-    <script src="js/vuetify.js"></script>
-    <script src="js/axios.min.js"></script>
-    <script>
-        Vue.config.devtools = true;
-        new Vue({
-            el: '#app',
-            vuetify: new Vuetify(),
-            data: {
-                brightness: [0, 0, 0, 0],  // Default brightness values for each LED
-                joystickRunning: false,
-                motionRunning: false,
-                message: '',
-                alertType: '',
-                sensorData: [], 
-            },
-            methods: {
-                async toggle(channel, board, id) {
-                    const state = document.getElementById(`toggle-${id}-${channel}`).checked ? 1 : 0;
-                    if (board === 0) {
-                        try {
-                            const response = await axios.post('/v1.0/cam_toggle', {
-                                cam_num: channel,
-                                state: state,
-                            });
-                            console.log(response.data);
-                        } catch (error) {
-                            console.error('Error toggling Camera:', error);
-                        }
-                    } else if (board === 1) {
-                        try {
-                            const response = await axios.post('/v1.0/led_toggle', {
-                                led_num: channel,
-                                state: state,
-                            });
-                            console.log(response.data);
-                        } catch (error) {
-                            console.error('Error toggling LED:', error);
-                        }
-                    } else {
-                        try {
-                            const response = await axios.post('/v1.0/motor_toggle', {
-                                motor_num: channel,
-                                state: state,
-                            });
-                            console.log(response.data);
-                        } catch (error) {
-                            console.error('Error toggling Motor:', error);
-                        }
-                    }
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
+            <!-- Floating Bubbles Background -->
+ 
+        </v-container>
+      </v-main>
+    
+    </v-app>
+  
+  </div>
 
-                },
-                async setBrightness(channel) {
-                    try {
-                        const response = await axios.post('/v1.0/led_brightness', {
-                            channel: channel,
-                            brightness: this.brightness[channel]
-                        });
-                        console.log(`Brightness for channel ${channel} set to:`, this.brightness[channel], response.data);
-                    } catch (error) {
-                        console.error(`Error setting brightness for channel ${channel}:`, error);
-                    }
-                },
-                async startJoystick() {
-                    try {
-                        const response = await axios.post('/v1.0/start_joystick');
-                        const data = await response.json();
-                        if (response.ok) {
-                            this.joystickRunning = true;
-                            this.message = data.message;
-                            this.alertType = 'success';
-                        } else {
-                            this.message = data.message;
-                            this.alertType = 'error';
-                        }
-                    } catch (error) {
-                        this.message = `Error: ${error.message}`;
-                        this.alertType = 'error';
-                    }
-                },
-                async stopJoystick() {
-                    try {
-                        const response = await axios.post('/v1.0/stop_joystick');
-                        const data = await response.json();
-                        if (response.ok) {
-                            this.joystickRunning = false;
-                            this.message = data.message;
-                            this.alertType = 'success';
-                        } else {
-                            this.message = data.message;
-                            this.alertType = 'error';
-                        }
-                    } catch (error) {
-                        this.message = `Error: ${error.message}`;
-                        this.alertType = 'error';
-                    }
-                },
-                async startMotion() {
-                    try {
-                        const response = await axios.post('/v1.0/start_motion');
-                        const data = await response.json();
-                        if (response.ok) {
-                            this.motionRunning = true;
-                            this.message = data.message;
-                            this.alertType = 'success';
-                        } else {
-                            this.message = data.message;
-                            this.alertType = 'error';
-                        }
-                    } catch (error) {
-                        this.message = `Error: ${error.message}`;
-                        this.alertType = 'error';
-                    }
-                },
-                async stopMotion() {
-                    try {
-                        const response = await axios.post('/v1.0/stop_motion');
-                        const data = await response.json();
-                        if (response.ok) {
-                            this.motionRunning = false;
-                            this.message = data.message;
-                            this.alertType = 'success';
-                        } else {
-                            this.message = data.message;
-                            this.alertType = 'error';
-                        }
-                    } catch (error) {
-                        this.message = `Error: ${error.message}`;
-                        this.alertType = 'error';
-                    }
-                },
-                async fetchSensorData() {
-                    try {
-                        const response = await axios.get('/v1.0/sensor_data');
-                        const data = response.data.sensordata;
-                        const msg = JSON.parse(data);
-
-                        // Update the sensorData array with the new data
-                        this.sensorData = [];
-                        for (const board in msg.current) {
-                            for (const channel in msg.current[board]) {
-                                const sensor = msg.current[board][channel];
-                                this.sensorData.push({
-                                    voltage: sensor.volt,
-                                    current: sensor.current,
-                                    watt: sensor.watt,
-                                });
-
-                                // Update the HTML elements with the new data
-                                const vId = `v${board}${channel}`;
-                                const cId = `c${board}${channel}`;
-                                const tId = `t${board}${channel}`;
-
-                                const vElement = document.getElementById(vId);
-                                const cElement = document.getElementById(cId);
-                                const tElement = document.getElementById(tId);
-
-                                if (vElement) vElement.innerHTML = sensor.volt.toFixed(2);
-                                if (cElement) cElement.innerHTML = sensor.current.toFixed(2);
-                                if (tElement) tElement.innerHTML = sensor.watt.toFixed(2);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error fetching sensor data:', error);
-                    }
-                }
-            },
-            mounted() {
-                this.fetchSensorData();
-                setInterval(this.fetchSensorData, 1000); // Fetch data every second
+  <script src="js/vue.js"></script>
+  <script src="js/vuetify.js"></script>
+  <script src="js/axios.min.js"></script>
+  <script>
+    Vue.config.devtools = true;
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      data: {
+        brightness: [0, 0, 0, 0],  // Default brightness values for each LED
+        joystickRunning: false,
+        motionRunning: false,
+        message: '',
+        alertType: '',
+        sensorData: [],
+        panels: [0,4] // All panels open by default
+      },
+      methods: {
+        async toggle(channel, board, id) {
+          const state = document.getElementById(`toggle-${id}-${channel}`).checked ? 1 : 0;
+          if (board === 0) {
+            try {
+              const response = await axios.post('/v1.0/cam_toggle', {
+                cam_num: channel,
+                state: state,
+              });
+              console.log(response.data);
+            } catch (error) {
+              console.error('Error toggling Camera:', error);
             }
-        });
-    </script>
-
+          } else if (board === 1) {
+            try {
+              const response = await axios.post('/v1.0/led_toggle', {
+                led_num: channel,
+                state: state,
+              });
+              console.log(response.data);
+            } catch (error) {
+              console.error('Error toggling LED:', error);
+            }
+          } else {
+            try {
+              const response = await axios.post('/v1.0/motor_toggle', {
+                motor_num: channel,
+                state: state,
+              });
+              console.log(response.data);
+            } catch (error) {
+              console.error('Error toggling Motor:', error);
+            }
+          }
+        },
+        async setBrightness(channel) {
+          try {
+            const response = await axios.post('/v1.0/led_brightness', {
+              channel: channel,
+              brightness: this.brightness[channel]
+            });
+            console.log(`Brightness for channel ${channel} set to:`, this.brightness[channel], response.data);
+          } catch (error) {
+            console.error(`Error setting brightness for channel ${channel}:`, error);
+          }
+        },
+        async startJoystick() {
+          try {
+            const response = await axios.post('/v1.0/start_joystick');
+            const data = response.data;
+            this.joystickRunning = true;
+            this.message = data.message;
+            this.alertType = 'success';
+          } catch (error) {
+            this.message = `Error: ${error.message}`;
+            this.alertType = 'error';
+          }
+        },
+        async stopJoystick() {
+          try {
+            const response = await axios.post('/v1.0/stop_joystick');
+            const data = response.data;
+            this.joystickRunning = false;
+            this.message = data.message;
+            this.alertType = 'success';
+          } catch (error) {
+            this.message = `Error: ${error.message}`;
+            this.alertType = 'error';
+          }
+        },
+        async startMotion() {
+          try {
+            const response = await axios.post('/v1.0/start_motion');
+            const data = response.data;
+            this.motionRunning = true;
+            this.message = data.message;
+            this.alertType = 'success';
+          } catch (error) {
+            this.message = `Error: ${error.message}`;
+            this.alertType = 'error';
+          }
+        },
+        async stopMotion() {
+          try {
+            const response = await axios.post('/v1.0/stop_motion');
+            const data = response.data;
+            this.motionRunning = false;
+            this.message = data.message;
+            this.alertType = 'success';
+          } catch (error) {
+            this.message = `Error: ${error.message}`;
+            this.alertType = 'error';
+          }
+        },
+        async fetchSensorData() {
+          try {
+            const response = await axios.get('/v1.0/sensor_data');
+            const data = response.data.sensordata;
+            const msg = JSON.parse(data);
+            // Reset sensorData array
+            this.sensorData = [];
+            for (const board in msg.current) {
+              for (const channel in msg.current[board]) {
+                const sensor = msg.current[board][channel];
+                this.sensorData.push({
+                  voltage: sensor.volt,
+                  current: sensor.current,
+                  watt: sensor.watt,
+                });
+                // Update specific HTML elements if they exist
+                const vId = `v${board}${channel}`;
+                const cId = `c${board}${channel}`;
+                const tId = `t${board}${channel}`;
+                const vElement = document.getElementById(vId);
+                const cElement = document.getElementById(cId);
+                const tElement = document.getElementById(tId);
+                if (vElement) vElement.innerHTML = sensor.volt.toFixed(2);
+                if (cElement) cElement.innerHTML = sensor.current.toFixed(2);
+                if (tElement) tElement.innerHTML = sensor.watt.toFixed(2);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching sensor data:', error);
+          }
+        }
+      },
+      mounted() {
+        this.fetchSensorData();
+        setInterval(this.fetchSensorData, 1000);
+      }
+    });
+  </script>
 </body>
 
 </html>
