@@ -9,7 +9,7 @@
     /* Existing styles */
     .v-card {
       padding: 20px;
-    
+
     }
 
     h1 {
@@ -21,7 +21,7 @@
     .container {
       width: 100%;
       margin: 0 auto;
-      
+
     }
 
     .hero {
@@ -63,15 +63,15 @@
       transition: .4s;
     }
 
-    input:checked + .slider {
+    input:checked+.slider {
       background-color: #f32121;
     }
 
-    input:focus + .slider {
+    input:focus+.slider {
       box-shadow: 0 0 1px #f32121;
     }
 
-    input:checked + .slider:before {
+    input:checked+.slider:before {
       -webkit-transform: translateX(26px);
       -ms-transform: translateX(26px);
       transform: translateX(26px);
@@ -84,21 +84,19 @@
     .slider.round:before {
       border-radius: 50%;
     }
-.v-expansion-panel{
-    background-color: black !important;
-    color: white !important;
-}
+
+    .v-expansion-panel {
+      background-color: black !important;
+      color: white !important;
+    }
 
 
     /* New background and floating bubbles */
     #app {
-  background: #37bfecd5;
-  overflow: hidden;
-  position: relative;
-}
-
-
-
+      background: #37bfecd5;
+      overflow: hidden;
+      position: relative;
+    }
   </style>
 </head>
 
@@ -106,7 +104,7 @@
 
 
   <div id="app">
- 
+
     <v-app>
       <v-main>
         <v-container>
@@ -114,7 +112,7 @@
           <v-alert v-if="message" :type="alertType" dismissible>{{ message }}</v-alert>
 
           <!-- Expansion panels (all open by default) -->
-          <v-expansion-panels v-model="panels" multiple >
+          <v-expansion-panels v-model="panels" multiple>
             <!-- Motor Scripts Control Panel -->
             <v-expansion-panel>
               <v-expansion-panel-header>Motor Scripts Control Panel</v-expansion-panel-header>
@@ -374,34 +372,138 @@
 
             <!-- Sensor Data -->
             <v-expansion-panel>
-              <v-expansion-panel-header>Sensor Data</v-expansion-panel-header>
+              <v-expansion-panel-header>BME Sensor Data</v-expansion-panel-header>
               <v-expansion-panel-content>
                 <v-container>
                   <table style="width:100%">
                     <tr>
-                      <th>Channel</th>
-                      <th>Voltage</th>
-                      <th>Current</th>
-                      <th>Watt</th>
+                      <th></th>
+                      <th>Channel 1</th>
+                      <th>Channel 2</th>
+                      <th>Channel 3</th>
+                      <th>Channel 4</th>
                     </tr>
-                    <tr v-for="(sensor, index) in sensorData" :key="index">
-                      <td>{{ index + 1 }}</td>
-                      <td>{{ sensor.voltage.toFixed(2) }}</td>
-                      <td>{{ sensor.current.toFixed(2) }}</td>
-                      <td>{{ sensor.watt.toFixed(2) }}</td>
+                    <tr>
+                      <td>Temperature</td>
+                      <td id="temp1"></td>
+                      <td id="temp2"></td>
+                      <td id="temp3"></td>
+                      <td id="temp4"></td>
                     </tr>
+                    <tr>
+                      <td>Pressure</td>
+                      <td id="press1"></td>
+                      <td id="press2"></td>
+                      <td id="press3"></td>
+                      <td id="press4"></td>
+                    </tr>
+                    <tr>
+                      <td>Humidity</td>
+                      <td id="hum1"></td>
+                      <td id="hum2"></td>
+                      <td id="hum3"></td>
+                      <td id="hum4"></td>
+                    </tr>
+
+                    <tr>
+                      <th></th>
+                      <th>Channel 5</th>
+                      <th>Channel 6</th>
+                      <th>Channel 7</th>
+                      <th>Channel 8</th>
+                    </tr>
+                    <tr>
+                      <td>Temperature</td>
+                      <td id="temp5"></td>
+                      <td id="temp6"></td>
+                      <td id="temp7"></td>
+                      <td id="temp8"></td>
+                    </tr>
+                    <tr>
+                      <td>Pressure</td>
+                      <td id="press5"></td>
+                      <td id="press6"></td>
+                      <td id="press7"></td>
+                      <td id="press8"></td>
+                    </tr>
+                    <tr>
+                      <td>Humidity</td>
+                      <td id="hum5"></td>
+                      <td id="hum6"></td>
+                      <td id="hum7"></td>
+                      <td id="hum8"></td>
+                    </tr>
+
+                    <tr>
+                      <th></th>
+                      <th>Channel 9</th>
+                      <th>Channel 10</th>
+                      <th>Channel 11</th>
+                      <th>Channel 12</th>
+                    </tr>
+                    <tr>
+                      <td>Temperature</td>
+                      <td id="temp9"></td>
+                      <td id="temp10"></td>
+                      <td id="temp11"></td>
+                      <td id="temp12"></td>
+                    </tr>
+                    <tr>
+                      <td>Pressure</td>
+                      <td id="press9"></td>
+                      <td id="press10"></td>
+                      <td id="press11"></td>
+                      <td id="press12"></td>
+                    </tr>
+                    <tr>
+                      <td>Humidity</td>
+                      <td id="hum9"></td>
+                      <td id="hum10"></td>
+                      <td id="hum11"></td>
+                      <td id="hum12"></td>
+                    </tr>
+
+                    <tr>
+                      <th></th>
+                      <th>Channel 13</th>
+                      <th>Channel 14</th>
+                      <th>Channel 15</th>
+                      <th>Channel 16</th>
+                    </tr>
+                    <tr>
+                      <td>Temperature</td>
+                      <td id="temp13"></td>
+                      <td id="temp14"></td>
+                      <td id="temp15"></td>
+                      <td id="temp16"></td>
+                    </tr>
+                    <tr>
+                      <td>Pressure</td>
+                      <td id="press13"></td>
+                      <td id="press14"></td>
+                      <td id="press15"></td>
+                      <td id="press16"></td>
+                    </tr>
+                    <tr>
+                      <td>Humidity</td>
+                      <td id="hum13"></td>
+                      <td id="hum14"></td>
+                      <td id="hum15"></td>
+                      <td id="hum16"></td>
+                    </tr>
+                    <!-- Repeat the above structure for the remaining channels -->
                   </table>
                 </v-container>
               </v-expansion-panel-content>
             </v-expansion-panel>
           </v-expansion-panels>
-            <!-- Floating Bubbles Background -->
- 
+          <!-- Floating Bubbles Background -->
+
         </v-container>
       </v-main>
-    
+
     </v-app>
-  
+
   </div>
 
   <script src="js/vue.js"></script>
@@ -419,7 +521,8 @@
         message: '',
         alertType: '',
         sensorData: [],
-        panels: [0,4] // All panels open by default
+        bmeData: [],
+        panels: [0, 4] // All panels open by default
       },
       methods: {
         async toggle(channel, board, id) {
@@ -545,11 +648,34 @@
           } catch (error) {
             console.error('Error fetching sensor data:', error);
           }
+        },
+        async fetchBmeData() {
+          const response = await axios.get('/v1.0/bme_data');
+          const data = response.data.bmedata;
+          const msg = JSON.parse(data);
+          // Reset bemData array
+          this.bmeData = [];
+          var bmeData = msg.bme;
+          // Iterate through the channels (1 to 16)
+          for (var channel = 1; channel <= 16; channel++) {
+            // Access the sensor data for the current channel
+            var sensor = bmeData[channel];
+
+            if (sensor) {
+              // Populate the table cells for the current channel
+              document.getElementById('temp' + channel).innerHTML = sensor.temperature;
+              document.getElementById('press' + channel).innerHTML = sensor.pressure;
+              document.getElementById('hum' + channel).innerHTML = sensor.humidity;
+            }
+          }
         }
       },
       mounted() {
         this.fetchSensorData();
+        this.fetchBmeData();
         setInterval(this.fetchSensorData, 1000);
+        setInterval(this.fetchBmeData, 1000);
+
       }
     });
   </script>

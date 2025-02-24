@@ -160,6 +160,12 @@ async def get_sensor_data():
     retv = json.dumps({'current': stack.get_current_sensor_data()})
     return {"success": True, 'sensordata': retv}
 
+@app.get("/bme_data", status_code=status.HTTP_200_OK)
+@version(1, 0)
+async def get_bme_data():
+    global stack
+    retv = json.dumps({'bme': stack.get_bme_data()})
+    return {"success": True, 'bmedata': retv}
 # Versioned API
 app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
 
