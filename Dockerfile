@@ -18,7 +18,7 @@ RUN if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "armv7l" ]; then \
 RUN pip install smbus==1.1.post2
 RUN ls /app
 
-EXPOSE 80/tcp
+EXPOSE 80/tcp 9009/tcp
 
 LABEL version="0.0.3"
 
@@ -27,13 +27,19 @@ ARG IMAGE_NAME
 LABEL permissions='\
 {\
   "ExposedPorts": {\
-    "80/tcp": {}\
+    "80/tcp": {},\
+    "9009/tcp": {}\
   },\
   "HostConfig": {\
     "Privileged": true,\
     "Binds":["/root/.config:/root/.config"],\
     "PortBindings": {\
       "80/tcp": [\
+        {\
+          "HostPort": ""\
+        }\
+      ],\
+      "9009/tcp": [\
         {\
           "HostPort": ""\
         }\
