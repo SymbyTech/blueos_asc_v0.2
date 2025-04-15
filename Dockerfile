@@ -2,6 +2,7 @@ FROM python:3.12
 
 COPY app /app
 RUN pip install --upgrade pip
+RUN pip install setuptools
 RUN pip install -r /app/requirements.txt
 RUN pip install RPi.GPIO
 RUN pip install smbus==1.1.post2

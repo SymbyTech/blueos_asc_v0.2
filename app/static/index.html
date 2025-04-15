@@ -562,8 +562,8 @@
         async setBrightness(channel) {
           try {
             const response = await axios.post('/v1.0/led_brightness', {
-              channel: channel,
-              brightness: this.brightness[channel]
+              led_num: channel,
+              val: this.brightness[channel]
             });
             console.log(`Brightness for channel ${channel} set to:`, this.brightness[channel], response.data);
           } catch (error) {

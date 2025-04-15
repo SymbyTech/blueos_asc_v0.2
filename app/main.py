@@ -13,6 +13,10 @@ from pydantic import BaseModel
 from Stack import Stack
 import subprocess
 import os
+
+# Import LED Controller
+from led import led_controller
+
 # Service name for logging
 SERVICE_NAME = "RealTimeSensorDisplay"
 
@@ -25,22 +29,12 @@ app = FastAPI(
     description="Smart Control API for Real-time Data and Control Management.",
 )
 
-# Global variable to store the subprocess
+# Global variables
 joystick_process = None
 motion_process = None
-# Initialize Stack instance
 stack = Stack()
 
-# Configure CORS
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-# Define data models
+# Data Models
 class LEDToggle(BaseModel):
     led_num: int
     state: int
@@ -57,20 +51,19 @@ class CAMToggle(BaseModel):
     cam_num: int
     state: int
 
-# Sensor data handling in a separate thread
+# Sensor Thread
 def sensor_data():
     global stack
     while True:
         retv = json.dumps({'current': stack.get_current_sensor_data()})
         time.sleep(1)
-        logger.info(f"Sensor data: {retv}")
+        # logger.info(f"Sensor data: {retv}")
 
 sensor_thread = threading.Thread(target=sensor_data)
 sensor_thread.daemon = True
 sensor_thread.start()
 
-
-# Post Request to handle joystick start script and stop script
+# API Endpoints
 @app.post("/start_joystick")
 @version(1, 0)
 async def start_joystick():
@@ -82,7 +75,6 @@ async def start_joystick():
         return {"status": "success", "message": "Joystick server started."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
 
 @app.post("/stop_joystick")
 @version(1, 0)
@@ -94,7 +86,6 @@ async def stop_joystick():
         return {"status": "success", "message": "Joystick server stopped."}
     return {"status": "error", "message": "Joystick server is not running."}
 
-# Post Request to handle motion start script and stop script
 @app.post("/start_motion")
 @version(1, 0)
 async def start_motion():
@@ -122,8 +113,7 @@ async def stop_motion():
 async def handle_led_toggle(data: LEDToggle):
     led_num = data.led_num
     state = data.state
-    LED_BOARD = 1
-    stack.switch(LED_BOARD, led_num + 1, state)
+    led_controller.set_brightness(led_num, 100 if state else 0)
     return {"success": True, "message": f"LED Channel {led_num} toggled to {state}"}
 
 @app.post("/led_brightness", status_code=status.HTTP_200_OK)
@@ -131,9 +121,8 @@ async def handle_led_toggle(data: LEDToggle):
 async def handle_led_brightness(data: LEDVALToggle):
     led_num = data.led_num
     val = data.val
-    LED_PIN = 0
-    stack.set_pwm_out(led_num + LED_PIN, val)
-    return {"success": True, "message": f"LED Channel increased to {val}"}
+    led_controller.set_brightness(led_num, val)
+    return {"success": True, "message": f"LED Channel {led_num} brightness set to {val}"}
 
 @app.post("/motor_toggle", status_code=status.HTTP_200_OK)
 @version(1, 0)
@@ -166,10 +155,9 @@ async def get_bme_data():
     global stack
     retv = json.dumps({'bme': stack.get_bme_data()})
     return {"success": True, 'bmedata': retv}
-# Versioned API
-app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
 
-# Mount static files
+# Versioning and Static Files
+app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 @app.get("/", response_class=FileResponse)
@@ -177,5 +165,4 @@ async def root():
     return "index.html"
 
 if __name__ == "__main__":
-    # Running uvicorn with log disabled so loguru can handle it
     uvicorn.run(app, host="0.0.0.0", port=80, log_config=None)
