@@ -1,6 +1,11 @@
-FROM python:3.12
+FROM python:3.11
 
 COPY app /app
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --upgrade pip
 RUN pip install setuptools
 RUN pip install -r /app/requirements.txt
