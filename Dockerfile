@@ -4,7 +4,12 @@ COPY app /app
 RUN pip install --upgrade pip
 RUN pip install setuptools
 RUN pip install -r /app/requirements.txt
-RUN pip install RPi.GPIO
+
+# Only install RPi.GPIO if we're on ARM architecture
+RUN if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "armv7l" ]; then \
+    pip install RPi.GPIO; \
+    fi
+
 RUN pip install smbus==1.1.post2
 RUN ls /app
 
