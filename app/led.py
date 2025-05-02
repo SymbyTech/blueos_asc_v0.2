@@ -3,7 +3,7 @@ import threading
 import queue
 
 # Configuration
-LED_NANO_PORT = '/dev/ttyUSB0'   # Update to your actual port
+LED_NANO_PORT = '/dev/LEDS'   # Update to your actual port
 BAUD_RATE = 9600
 
 # Thread-safe command queue
