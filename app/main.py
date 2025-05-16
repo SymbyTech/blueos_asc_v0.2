@@ -113,7 +113,22 @@ async def stop_motion():
 async def handle_led_toggle(data: LEDToggle):
     led_num = data.led_num
     state = data.state
-    led_controller.set_brightness(led_num, 100 if state else 0)
+    
+    # Store the switch state
+    led_controller.set_switch_state(led_num, state)
+    
+    # If switch is turned off, force brightness to 0
+    # If switch is turned on, use the stored brightness value (or default to 100%)
+    if state:
+        # Get current brightness, if it's 0 set it to 100
+        current_brightness = led_controller.get_brightness(led_num)
+        if current_brightness == 0:
+            current_brightness = 100
+        led_controller.set_brightness(led_num, current_brightness)
+    else:
+        # Force brightness to 0 when switch is off
+        led_controller.set_brightness(led_num, 0)
+    
     return {"success": True, "message": f"LED Channel {led_num} toggled to {state}"}
 
 @app.post("/led_brightness", status_code=status.HTTP_200_OK)
@@ -121,7 +136,14 @@ async def handle_led_toggle(data: LEDToggle):
 async def handle_led_brightness(data: LEDVALToggle):
     led_num = data.led_num
     val = data.val
-    led_controller.set_brightness(led_num, val)
+    
+    # Store the brightness value regardless of switch state
+    led_controller.brightness_values[led_num] = val
+    
+    # Only apply brightness if switch is ON
+    if led_controller.get_switch_state(led_num):
+        led_controller.set_brightness(led_num, val)
+    
     return {"success": True, "message": f"LED Channel {led_num} brightness set to {val}"}
 
 @app.post("/motor_toggle", status_code=status.HTTP_200_OK)
