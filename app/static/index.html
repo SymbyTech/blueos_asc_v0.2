@@ -144,6 +144,41 @@
               </v-expansion-panel-content>
             </v-expansion-panel>
 
+            <!-- Joystick Control Panel - Closed by default -->
+            <v-expansion-panel id="joystick-panel" ref="joystickPanel">
+              <v-expansion-panel-header>Joystick Control</v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-card>
+                  <v-card-text>
+                    <div class="joystick-container">
+                      <div id="connection-status" class="status-indicator" style="color: red;">
+                        WebSocket: Disconnected
+                      </div>
+                      
+                      <div id="controller-status" class="status-indicator" style="color: red;">
+                        Controller: Disconnected
+                      </div>
+                      
+                      <div class="visual-display" style="margin: 20px auto; width: 300px; height: 300px; border: 2px solid #4CAF50; border-radius: 50%; position: relative; background-color: #222;">
+                        <div id="joystick-dot" style="width: 20px; height: 20px; background-color: #F44336; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: all 0.1s ease;"></div>
+                      </div>
+                      
+                      <div class="controller-data" style="margin-top: 20px; padding: 15px; background-color: #444; border-radius: 5px;">
+                        <div class="data-line">
+                          <span style="display: inline-block; margin-right: 10px; color: #4CAF50;">Axis Data:</span>
+                          <span id="axis-data"></span>
+                        </div>
+                        <div class="data-line" style="margin-top: 10px;">
+                          <span style="display: inline-block; margin-right: 10px; color: #4CAF50;">Button Data:</span>
+                          <span id="button-data"></span>
+                        </div>
+                      </div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
             <!-- Board 0 - Cameras -->
             <v-expansion-panel>
               <v-expansion-panel-header>Board 0 - Cameras</v-expansion-panel-header>
@@ -522,7 +557,21 @@
         alertType: '',
         sensorData: [],
         bmeData: [],
-        panels: [0, 4] // All panels open by default
+        panels: [0, 4], // All panels open by default
+        joystickSocket: null,
+        controllerConnected: false,
+      },
+      mounted() {
+        this.fetchSensorData();
+        this.fetchBmeData();
+        this.intervalId = setInterval(this.fetchSensorData, 1000);
+        this.initJoystickWebSocket();
+      },
+      beforeDestroy() {
+        clearInterval(this.intervalId);
+        if (this.joystickSocket) {
+          this.joystickSocket.close();
+        }
       },
       methods: {
         async toggle(channel, board, id) {
@@ -577,6 +626,35 @@
             this.joystickRunning = true;
             this.message = data.message;
             this.alertType = 'success';
+            
+            // Find the joystick panel index
+            const panelElements = document.querySelectorAll('.v-expansion-panel');
+            let joystickPanelIndex = -1;
+            
+            for (let i = 0; i < panelElements.length; i++) {
+              if (panelElements[i].id === 'joystick-panel') {
+                joystickPanelIndex = i;
+                break;
+              }
+            }
+            
+            // Open the joystick panel
+            if (joystickPanelIndex !== -1) {
+              if (!this.panels.includes(joystickPanelIndex)) {
+                this.panels.push(joystickPanelIndex);
+              }
+              
+              // Scroll to the joystick panel
+              setTimeout(() => {
+                const joystickPanel = document.getElementById('joystick-panel');
+                if (joystickPanel) {
+                  joystickPanel.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 300);
+            }
+            
+            // Initialize WebSocket
+            this.initJoystickWebSocket();
           } catch (error) {
             this.message = `Error: ${error.message}`;
             this.alertType = 'error';
@@ -589,6 +667,16 @@
             this.joystickRunning = false;
             this.message = data.message;
             this.alertType = 'success';
+            
+            // Close WebSocket
+            if (this.joystickSocket) {
+              this.joystickSocket.close();
+              this.joystickSocket = null;
+            }
+            
+            // Update status indicators
+            document.getElementById('connection-status').textContent = 'WebSocket: Disconnected';
+            document.getElementById('connection-status').style.color = 'red';
           } catch (error) {
             this.message = `Error: ${error.message}`;
             this.alertType = 'error';
@@ -668,14 +756,117 @@
               document.getElementById('hum' + channel).innerHTML = sensor.humidity;
             }
           }
-        }
-      },
-      mounted() {
-        this.fetchSensorData();
-        this.fetchBmeData();
-        setInterval(this.fetchSensorData, 1000);
-        setInterval(this.fetchBmeData, 1000);
+        },
+        initJoystickWebSocket() {
+          // Close existing connection if any
+          if (this.joystickSocket) {
+            this.joystickSocket.close();
+          }
+          
+          // Create WebSocket connection
+          this.joystickSocket = new WebSocket(`ws://${window.location.host}/ws/joystick`);
+          const connectionStatus = document.getElementById('connection-status');
+          const controllerStatus = document.getElementById('controller-status');
+          const joystickDot = document.getElementById('joystick-dot');
+          
+          // Connection opened
+          this.joystickSocket.addEventListener('open', (event) => {
+              connectionStatus.textContent = 'WebSocket: Connected';
+              connectionStatus.style.color = '#4CAF50';
+              console.log('WebSocket connected');
+          });
+          
+          // Connection closed
+          this.joystickSocket.addEventListener('close', (event) => {
+              connectionStatus.textContent = 'WebSocket: Disconnected';
+              connectionStatus.style.color = 'red';
+              console.log('WebSocket disconnected');
+          });
+          
+          // Listen for messages
+          this.joystickSocket.addEventListener('message', (event) => {
+              const data = JSON.parse(event.data);
+              console.log('Server response:', data);
+          });
+          
+          // Handle errors
+          this.joystickSocket.addEventListener('error', (event) => {
+              connectionStatus.textContent = 'WebSocket: Error';
+              connectionStatus.style.color = 'red';
+              console.error('WebSocket error:', event);
+          });
+          
+          // Setup gamepad event listeners
+          window.addEventListener("gamepadconnected", this.handleGamepadConnected);
+          window.addEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
+        },
+        handleGamepadConnected(event) {
+          this.controllerConnected = true;
+          const controllerStatus = document.getElementById('controller-status');
+          controllerStatus.textContent = 'Controller: Connected';
+          controllerStatus.style.color = '#4CAF50';
+          console.log("Gamepad connected!");
+          this.updateControllerData();
+        },
+        handleGamepadDisconnected(event) {
+          this.controllerConnected = false;
+          const controllerStatus = document.getElementById('controller-status');
+          controllerStatus.textContent = 'Controller: Disconnected';
+          controllerStatus.style.color = 'red';
+          console.log("Gamepad disconnected!");
+        },
+        updateControllerData() {
+          if (this.controllerConnected && this.joystickSocket && this.joystickSocket.readyState === WebSocket.OPEN) {
+              const gamepads = navigator.getGamepads();
+              const gp = gamepads[0];
+              
+              if (!gp) return;
 
+              // Display axis data horizontally
+              let axisDataHtml = "";
+              gp.axes.forEach((axis, index) => {
+                  axisDataHtml += `Axis ${index}: ${axis.toFixed(2)} `;
+              });
+              document.getElementById('axis-data').innerText = axisDataHtml;
+
+              // Display button data horizontally
+              let buttonDataHtml = "";
+              gp.buttons.forEach((button, index) => {
+                  let valueDisplay = button.value !== undefined ? button.value.toFixed(2) : button.pressed;
+                  buttonDataHtml += `Button ${index}: ${valueDisplay} `;
+              });
+              document.getElementById('button-data').innerText = buttonDataHtml;
+
+              // Update visual joystick position (assuming axis 0 is horizontal, 1 is vertical)
+              if (gp.axes.length >= 2) {
+                  const xAxis = gp.axes[0];
+                  const yAxis = gp.axes[1];
+                  
+                  // Calculate position (150 = center, 140 = radius)
+                  const dotX = 150 + (xAxis * 140);
+                  const dotY = 150 + (yAxis * 140);
+                  
+                  const joystickDot = document.getElementById('joystick-dot');
+                  joystickDot.style.left = `${dotX}px`;
+                  joystickDot.style.top = `${dotY}px`;
+              }
+
+              // Send data to the server via WebSocket
+              this.joystickSocket.send(JSON.stringify({
+                  axes: gp.axes.map((axis, index) => ({ index, value: axis.toFixed(2) })),
+                  buttons: gp.buttons.map((button, index) => ({
+                      index,
+                      value: button.value !== undefined ? button.value.toFixed(2) : button.pressed
+                  }))
+              }));
+
+              // Request next frame update
+              requestAnimationFrame(this.updateControllerData);
+          } else if (this.controllerConnected) {
+              // If WebSocket is closed but controller is connected, try again later
+              setTimeout(this.updateControllerData, 1000);
+          }
+        },
       }
     });
   </script>
