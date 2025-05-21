@@ -32,7 +32,7 @@ LABEL permissions='\
   },\
   "HostConfig": {\
     "Privileged": true,\
-    "Binds":["/root/.config:/root/.config"],\
+    "Binds":["/root/.config:/root/.config", "/dev:/dev"],\
     "Devices": [\
       {\
         "PathOnHost": "/dev/LEDS",\
@@ -91,3 +91,4 @@ LABEL links='{\
 LABEL requirements="core >= 1.1"
 
 ENTRYPOINT cd /app && python main.py
+
