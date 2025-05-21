@@ -101,64 +101,89 @@ class Stack:
     def update_(self):
         flag = True
         while(flag):
-            if self.rpi_pwm_pins is None:
-                GPIO.setwarnings(False)
-                GPIO.setmode(GPIO.BOARD)
-                self.rpi_pwm_pins = []
-                for pin in self.pwm_pins: 
-                    GPIO.setup(pin,GPIO.OUT) 
-                    self.rpi_pwm_pins.append(GPIO.PWM(pin,1))
-                    self.rpi_pwm_pins[-1].start(50)
+            try:
+                if self.rpi_pwm_pins is None:
+                    GPIO.setwarnings(False)
+                    GPIO.setmode(GPIO.BOARD)
+                    self.rpi_pwm_pins = []
+                    for pin in self.pwm_pins: 
+                        GPIO.setup(pin,GPIO.OUT) 
+                        self.rpi_pwm_pins.append(GPIO.PWM(pin,1))
+                        self.rpi_pwm_pins[-1].start(50)
 
-            retv = self.get_all_current()
-            for key in retv:
-                sense_key = self.current_sense[key]
-                for key2 in retv[key]:
-                    sense_key[key2] = retv[key][key2]
-                self.current_sense[key] = sense_key
+                retv = self.get_all_current()
+                for key in retv:
+                    sense_key = self.current_sense[key]
+                    for key2 in retv[key]:
+                        sense_key[key2] = retv[key][key2]
+                    self.current_sense[key] = sense_key
 
-            retv = self.updates.copy()
-            updates_key = self.updates['pwm']
-            updates_key['clock']['updated'] = False
-            for i in range(16): updates_key[i]['updated'] = False
-            self.updates['pwm'] = updates_key
+                # Safely access pwm dictionary
+                try:
+                    retv = self.updates.copy()
+                    if 'pwm' in retv and isinstance(retv['pwm'], dict):
+                        updates_key = self.updates.get('pwm', {})
+                        if 'clock' in updates_key and isinstance(updates_key['clock'], dict):
+                            updates_key['clock']['updated'] = False
+                            for i in range(16): 
+                                if i in updates_key and isinstance(updates_key[i], dict):
+                                    updates_key[i]['updated'] = False
+                            self.updates['pwm'] = updates_key
 
-            if(retv['pwm']['clock']['updated']):self.set_pwm_freq_(retv['pwm']['clock']['freq'])
-            for i in range(16): 
-                if(retv['pwm'][i]['updated']):
-                    self.set_pwm_(i, retv['pwm'][i]['val'])
+                        if 'clock' in retv['pwm'] and retv['pwm']['clock'].get('updated', False):
+                            self.set_pwm_freq_(retv['pwm']['clock'].get('freq', 50))
+                        for i in range(16): 
+                            if i in retv['pwm'] and retv['pwm'][i].get('updated', False):
+                                self.set_pwm_(i, retv['pwm'][i].get('val', 0))
+                except Exception as e:
+                    print(f"Error updating PWM: {e}")
 
-            # __________________________________ Motors ________________________________
-            retv = self.updates.copy()
-            updates_key = self.updates['boards']
-            updates_key2 = self.updates['rpi_pwm']
-            for key in updates_key2: updates_key2[key]['updated'] = 0
-            self.updates['rpi_pwm'] = updates_key2
-            for key in updates_key:
-                for key2 in updates_key[key]:
-                    updates_key[key][key2]['updated'] = 0
-            self.updates['boards'] = updates_key
+                # Safely handle boards and rpi_pwm dictionaries
+                try:
+                    # __________________________________ Motors ________________________________
+                    retv = self.updates.copy()
+                    
+                    # Handle boards dictionary safely
+                    if 'boards' in self.updates:
+                        updates_key = self.updates.get('boards', {})
+                        for key in updates_key:
+                            for key2 in updates_key.get(key, {}):
+                                updates_key[key][key2]['updated'] = 0
+                        self.updates['boards'] = updates_key
+                    
+                    # Handle rpi_pwm dictionary safely
+                    if 'rpi_pwm' in self.updates:
+                        updates_key2 = self.updates.get('rpi_pwm', {})
+                        for key in updates_key2:
+                            updates_key2[key]['updated'] = 0
+                        self.updates['rpi_pwm'] = updates_key2
 
-            for key in retv["boards"]:
-                for key2 in retv["boards"][key]:
-                    if(retv["boards"][key][key2]['updated']): self.switch_(key, key2, retv["boards"][key][key2]['state'])
-             
-            for cnt in range(2):
-                if(retv['rpi_pwm'][cnt]['updated']): 
-                    self.rpi_pwm_pins[cnt].ChangeFrequency(retv['rpi_pwm'][cnt]['value'])
-                    # self.rpi_pwm_pins[1].ChangeFrequency(retv['rpi_pwm'][cnt]['value'])
-                    # change_freq(cnt, retv['rpi_pwm'][cnt]['value'])
-                    # pi_pwm.ChangeFrequency(10)
-                    # print(cnt, retv['rpi_pwm'][cnt]['value'])
-             # ___________________________________________________________________________
+                    # Process board updates
+                    if 'boards' in retv:
+                        for key in retv.get('boards', {}):
+                            for key2 in retv['boards'].get(key, {}):
+                                if retv['boards'][key][key2].get('updated', False): 
+                                    self.switch_(key, key2, retv['boards'][key][key2].get('state', 0))
+                     
+                    # Process rpi_pwm updates
+                    if 'rpi_pwm' in retv and self.rpi_pwm_pins:
+                        for cnt in range(2):
+                            if cnt in retv.get('rpi_pwm', {}) and retv['rpi_pwm'][cnt].get('updated', False): 
+                                self.rpi_pwm_pins[cnt].ChangeFrequency(retv['rpi_pwm'][cnt].get('value', 1))
+                except Exception as e:
+                    print(f"Error updating motors: {e}")
+                     # ___________________________________________________________________________
 
-            retv = self.get_all_bme_()
-            for key in retv:
-                sense_key = self.bme_sense[key]
-                for key2 in retv[key]:
-                    sense_key[key2] = retv[key][key2]
-                self.bme_sense[key] = sense_key
-            flag = self.flag.value
+                retv = self.get_all_bme_()
+                for key in retv:
+                    sense_key = self.bme_sense[key]
+                    for key2 in retv[key]:
+                        sense_key[key2] = retv[key][key2]
+                    self.bme_sense[key] = sense_key
+                flag = self.flag.value
+            except Exception as e:
+                print(f"Error in update loop: {e}")
+                time.sleep(0.5)  # Add delay to prevent rapid error loops
 
     def swap_multiplexer_(self, num, channel):
         if(num==1):   address = 0x77

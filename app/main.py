@@ -110,50 +110,6 @@ sensor_thread = threading.Thread(target=sensor_data)
 sensor_thread.daemon = True
 sensor_thread.start()
 
-# WebSocket endpoint for joystick data
-@app.websocket("/ws/joystick")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            # Receive joystick data
-            data = await websocket.receive_json()
-            
-            # Process joystick data if motion is enabled
-            if motion_controller_enabled and "axes" in data:
-                from motion import process_joystick_data
-                process_joystick_data(data)
-                
-            # Broadcast to all clients
-            await manager.broadcast(data)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        manager.disconnect(websocket)
-
-# Joystick page
-@app.get("/joystick", response_class=HTMLResponse)
-@version(1, 0)
-async def joystick_page():
-    with open(os.path.join(os.path.dirname(__file__), "joystick/templates/index.html"), "r") as f:
-        html_content = f.read()
-        # Update WebSocket URL to point to our endpoint
-        html_content = html_content.replace(
-            "var socket = io();", 
-            "var socket = new WebSocket(`ws://${window.location.host}/ws/joystick`);"
-        )
-        # Update any other Socket.IO specific code to use WebSocket
-        html_content = html_content.replace(
-            "socket.emit('joystick_data',", 
-            "socket.send(JSON.stringify("
-        )
-        html_content = html_content.replace(
-            "socket.on('joystick_response',", 
-            "socket.onmessage = function(event) { const data = JSON.parse(event.data); "
-        )
-        return html_content
-
 # API Endpoints
 @app.post("/start_joystick")
 @version(1, 0)
@@ -272,11 +228,56 @@ async def get_bme_data():
 
 # Versioning and Static Files
 app = VersionedFastAPI(app, version="1.0.0", prefix_format="/v{major}.{minor}", enable_latest=True)
+
+# WebSocket endpoint for joystick data - MUST be AFTER versioning
+@app.websocket("/ws/joystick")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Receive joystick data
+            data = await websocket.receive_json()
+            
+            # Process joystick data if motion is enabled
+            if motion_controller_enabled and "axes" in data:
+                from motion import process_joystick_data
+                process_joystick_data(data)
+                
+            # Broadcast to all clients
+            await manager.broadcast(data)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        manager.disconnect(websocket)
+
+# Mount static files AFTER adding the websocket route
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 @app.get("/", response_class=FileResponse)
 async def root():
     return "index.html"
+
+# Joystick page - moved to AFTER versioning to avoid conflicts
+@app.get("/joystick", response_class=HTMLResponse)
+async def joystick_page():
+    with open(os.path.join(os.path.dirname(__file__), "joystick/templates/index.html"), "r") as f:
+        html_content = f.read()
+        # Update WebSocket URL to point to our endpoint
+        html_content = html_content.replace(
+            "var socket = io();", 
+            "var socket = new WebSocket(`ws://${window.location.host}/ws/joystick`);"
+        )
+        # Update any other Socket.IO specific code to use WebSocket
+        html_content = html_content.replace(
+            "socket.emit('joystick_data',", 
+            "socket.send(JSON.stringify("
+        )
+        html_content = html_content.replace(
+            "socket.on('joystick_response',", 
+            "socket.onmessage = function(event) { const data = JSON.parse(event.data); "
+        )
+        return html_content
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=80, log_config=None)
