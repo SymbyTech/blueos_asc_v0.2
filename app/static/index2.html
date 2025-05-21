@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center; /* Center the overall layout */
+            color: white;
+            background-color: #333;
+            padding: 20px;
+        }
+        .controller-data {
+            margin-top: 10px;
+            text-align: left; /* Override inherited center alignment */
+            display: block; /* Ensure the section aligns left */
+            background-color: #444;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .axis-data, .button-data {
+            margin: 10px 0;
+            font-size: 14px; /* Reduced font size */
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        h2 {
+            display: inline-block; /* Keep the header on the same line as the data */
+            font-size: 14px; /* Set font size */
+            margin: 0 10px 0 0; /* Add spacing between header and data */
+            color: #4CAF50;
+        }
+        .data-line {
+            margin: 5px 0; /* Add spacing between each line of data */
+        }
+        .status {
+            margin-top: 10px;
+            padding: 5px;
+            background-color: #444;
+            border-radius: 5px;
+        }
+        .connected {
+            color: #4CAF50;
+        }
+        .disconnected {
+            color: #F44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Joystick Control</h1>
+    
+    <div id="connection-status" class="status disconnected">
+        WebSocket: Disconnected
+    </div>
+    
+    <div id="controller-status" class="status disconnected">
+        Controller: Disconnected
+    </div>
+
+    <div class="controller-data">
+        <div class="data-line">
+            <h2>Axis Data:</h2>
+            <span id="axis-data" class="axis-data"></span>
+        </div>
+        <div class="data-line">
+            <h2>Button Data:</h2>
+            <span id="button-data" class="button-data"></span>
+        </div>
+    </div>
+
+    <script>
+        // Create WebSocket connection
+        const socket = new WebSocket(`ws://${window.location.host}/ws/joystick`);
+        const connectionStatus = document.getElementById('connection-status');
+        const controllerStatus = document.getElementById('controller-status');
+        
+        // Connection opened
+        socket.addEventListener('open', (event) => {
+            connectionStatus.textContent = 'WebSocket: Connected';
+            connectionStatus.className = 'status connected';
+            console.log('WebSocket connected');
+        });
+        
+        // Connection closed
+        socket.addEventListener('close', (event) => {
+            connectionStatus.textContent = 'WebSocket: Disconnected';
+            connectionStatus.className = 'status disconnected';
+            console.log('WebSocket disconnected');
+        });
+        
+        // Listen for messages
+        socket.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Server response:', data);
+        });
+        
+        // Handle errors
+        socket.addEventListener('error', (event) => {
+            connectionStatus.textContent = 'WebSocket: Error';
+            connectionStatus.className = 'status disconnected';
+            console.error('WebSocket error:', event);
+        });
+
+        let controllerConnected = false;
+
+        window.addEventListener("gamepadconnected", (event) => {
+            controllerConnected = true;
+            controllerStatus.textContent = 'Controller: Connected';
+            controllerStatus.className = 'status connected';
+            console.log("Gamepad connected!");
+            updateControllerData();
+        });
+
+        window.addEventListener("gamepaddisconnected", (event) => {
+            controllerConnected = false;
+            controllerStatus.textContent = 'Controller: Disconnected';
+            controllerStatus.className = 'status disconnected';
+            console.log("Gamepad disconnected!");
+        });
+
+        function updateControllerData() {
+            if (controllerConnected && socket.readyState === WebSocket.OPEN) {
+                const gamepads = navigator.getGamepads();
+                const gp = gamepads[0];
+
+                // Display axis data horizontally
+                let axisDataHtml = "";
+                gp.axes.forEach((axis, index) => {
+                    axisDataHtml += `Axis ${index}: ${axis.toFixed(2)} `;
+                });
+                document.getElementById('axis-data').innerText = axisDataHtml;
+
+                // Display button data horizontally
+                let buttonDataHtml = "";
+                gp.buttons.forEach((button, index) => {
+                    let valueDisplay = button.value !== undefined ? button.value.toFixed(2) : button.pressed;
+                    buttonDataHtml += `Button ${index}: ${valueDisplay} `;
+                });
+                document.getElementById('button-data').innerText = buttonDataHtml;
+
+                // Send data to the server via WebSocket
+                socket.send(JSON.stringify({
+                    axes: gp.axes.map((axis, index) => ({ index, value: axis.toFixed(2) })),
+                    buttons: gp.buttons.map((button, index) => ({
+                        index,
+                        value: button.value !== undefined ? button.value.toFixed(2) : button.pressed
+                    }))
+                }));
+
+                // Request next frame update
+                requestAnimationFrame(updateControllerData);
+            } else if (controllerConnected) {
+                // If WebSocket is closed but controller is connected, try again later
+                setTimeout(updateControllerData, 1000);
+            }
+        }
+    </script>
+
+</body>
+</html>

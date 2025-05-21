@@ -277,7 +277,7 @@ async def joystick_page():
             "socket.on('joystick_response',", 
             "socket.onmessage = function(event) { const data = JSON.parse(event.data); "
         )
-        return html_content
+        return "index.html"
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=80, log_config=None)
