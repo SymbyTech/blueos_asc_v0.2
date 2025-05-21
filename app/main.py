@@ -4,9 +4,9 @@ import uvicorn
 import threading
 import json
 import time
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi_versioning import VersionedFastAPI, version
 from loguru import logger
 from pydantic import BaseModel
@@ -31,9 +31,54 @@ app = FastAPI(
 )
 
 # Global variables
-joystick_process = None
-motion_process = None
-stack = Stack()
+motion_controller_enabled = False
+websocket_connections = set()
+
+# Connection Manager for WebSockets
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        websocket_connections.add(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+        if websocket in websocket_connections:
+            websocket_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+manager = ConnectionManager()
+
+# Motion controller thread
+def run_motion_controller():
+    import json
+    from motion import command_queue, send_command_to_motors, state_manager
+    
+    while True:
+        if not motion_controller_enabled:
+            time.sleep(0.1)
+            continue
+            
+        # Process any commands in the queue
+        try:
+            if not command_queue.empty():
+                command = command_queue.get(block=False)
+                if command is not None:
+                    send_command_to_motors(command["speed"], command["direction_one"], command["direction_two"])
+        except Exception as e:
+            logger.error(f"Error in motion controller: {e}")
+        
+        time.sleep(0.01)
+
+# Start motion controller thread
+motion_thread = threading.Thread(target=run_motion_controller, daemon=True)
+motion_thread.start()
 
 # Data Models
 class LEDToggle(BaseModel):
@@ -60,75 +105,100 @@ def sensor_data():
         time.sleep(1)
         # logger.info(f"Sensor data: {retv}")
 
+stack = Stack()
 sensor_thread = threading.Thread(target=sensor_data)
 sensor_thread.daemon = True
 sensor_thread.start()
+
+# WebSocket endpoint for joystick data
+@app.websocket("/ws/joystick")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Receive joystick data
+            data = await websocket.receive_json()
+            
+            # Process joystick data if motion is enabled
+            if motion_controller_enabled and "axes" in data:
+                from motion import process_joystick_data
+                process_joystick_data(data)
+                
+            # Broadcast to all clients
+            await manager.broadcast(data)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        manager.disconnect(websocket)
+
+# Joystick page
+@app.get("/joystick", response_class=HTMLResponse)
+@version(1, 0)
+async def joystick_page():
+    with open(os.path.join(os.path.dirname(__file__), "joystick/templates/index.html"), "r") as f:
+        html_content = f.read()
+        # Update WebSocket URL to point to our endpoint
+        html_content = html_content.replace(
+            "var socket = io();", 
+            "var socket = new WebSocket(`ws://${window.location.host}/ws/joystick`);"
+        )
+        # Update any other Socket.IO specific code to use WebSocket
+        html_content = html_content.replace(
+            "socket.emit('joystick_data',", 
+            "socket.send(JSON.stringify("
+        )
+        html_content = html_content.replace(
+            "socket.on('joystick_response',", 
+            "socket.onmessage = function(event) { const data = JSON.parse(event.data); "
+        )
+        return html_content
 
 # API Endpoints
 @app.post("/start_joystick")
 @version(1, 0)
 async def start_joystick():
-    global joystick_process
-    if joystick_process and joystick_process.poll() is None:
-        return {"status": "error", "message": "Joystick server is already running."}
-    try:
-        joystick_process = subprocess.Popen(["python3", "joystick/joystick.py"], cwd=os.path.dirname(__file__))
-        return {"status": "success", "message": "Joystick server started."}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    # Instead of starting a process, return a redirect to the joystick page
+    return {"status": "success", "message": "Please navigate to /joystick to use the joystick interface"}
 
 @app.post("/stop_joystick")
 @version(1, 0)
 async def stop_joystick():
-    global joystick_process
-    if joystick_process and joystick_process.poll() is None:
-        joystick_process.terminate()
-        joystick_process = None
-        return {"status": "success", "message": "Joystick server stopped."}
-    return {"status": "error", "message": "Joystick server is not running."}
+    # No need to stop a process, but we can close existing WebSocket connections
+    return {"status": "success", "message": "Please close the joystick browser tab to stop the joystick"}
 
 @app.post("/start_motion")
 @version(1, 0)
 async def start_motion():
-    global motion_process
-    if motion_process and motion_process.poll() is None:
-        return {"status": "error", "message": "Motion script is already running."}
+    global motion_controller_enabled
+    if motion_controller_enabled:
+        return {"status": "error", "message": "Motion controller is already running."}
     try:
-        # Get host IP or use the BlueOS hostname
-        host_ip = None
-        try:
-            # Try to get the IP address of the container
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            host_ip = s.getsockname()[0]
-            s.close()
-        except:
-            # Fallback to localhost
-            host_ip = "127.0.0.1"
+        # Initialize motion controller
+        from motion import initialize_motion_controller
+        initialize_motion_controller()
         
-        # Set environment variable for joystick server
-        env = os.environ.copy()
-        env["JOYSTICK_SERVER"] = f"http://{host_ip}:9009"
-        print(f"Setting joystick server to: {env['JOYSTICK_SERVER']}")
-        
-        motion_process = subprocess.Popen(
-            ["python3", "motion.py"], 
-            cwd=os.path.dirname(__file__),
-            env=env
-        )
-        return {"status": "success", "message": "Motion script started."}
+        # Enable motion processing
+        motion_controller_enabled = True
+        return {"status": "success", "message": "Motion controller started."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.post("/stop_motion")
 @version(1, 0)
 async def stop_motion():
-    global motion_process
-    if motion_process and motion_process.poll() is None:
-        motion_process.terminate()
-        motion_process = None
-        return {"status": "success", "message": "Motion script stopped."}
-    return {"status": "error", "message": "Motion script is not running."}
+    global motion_controller_enabled
+    if not motion_controller_enabled:
+        return {"status": "error", "message": "Motion controller is not running."}
+    
+    # Disable motion processing
+    motion_controller_enabled = False
+    
+    # Stop motors
+    from motion import send_command_to_motors
+    send_command_to_motors(0, "STOP", "STOP")
+    
+    return {"status": "success", "message": "Motion controller stopped."}
 
 @app.post("/led_toggle", status_code=status.HTTP_200_OK)
 @version(1, 0)
