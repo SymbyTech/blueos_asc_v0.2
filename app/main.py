@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from Stack import Stack
 import subprocess
 import os
+import socket
 
 # Import LED Controller
 from led import led_controller
@@ -93,7 +94,28 @@ async def start_motion():
     if motion_process and motion_process.poll() is None:
         return {"status": "error", "message": "Motion script is already running."}
     try:
-        motion_process = subprocess.Popen(["python3", "motion.py"], cwd=os.path.dirname(__file__))
+        # Get host IP or use the BlueOS hostname
+        host_ip = None
+        try:
+            # Try to get the IP address of the container
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            host_ip = s.getsockname()[0]
+            s.close()
+        except:
+            # Fallback to localhost
+            host_ip = "127.0.0.1"
+        
+        # Set environment variable for joystick server
+        env = os.environ.copy()
+        env["JOYSTICK_SERVER"] = f"http://{host_ip}:9009"
+        print(f"Setting joystick server to: {env['JOYSTICK_SERVER']}")
+        
+        motion_process = subprocess.Popen(
+            ["python3", "motion.py"], 
+            cwd=os.path.dirname(__file__),
+            env=env
+        )
         return {"status": "success", "message": "Motion script started."}
     except Exception as e:
         return {"status": "error", "message": str(e)}

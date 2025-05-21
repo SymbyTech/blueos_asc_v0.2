@@ -2,6 +2,7 @@ import serial
 import socketio
 import threading
 import queue
+import os
 
 # Serial port configuration
 NANO2_SERIAL_PORT = '/dev/MOT1'  # Left motor
@@ -140,7 +141,10 @@ serial_thread.start()
 
 # Connect to joystick server
 try:
-    sio.connect('http://192.168.1.44:9009')
+    # Use environment variable with fallback to hardcoded IP
+    joystick_server = os.environ.get('JOYSTICK_SERVER', 'http://192.168.1.44:9009')
+    print(f"Connecting to joystick server at: {joystick_server}")
+    sio.connect(joystick_server)
     sio.wait()
 except Exception as e:
     print(f"Socket.IO connection error: {e}")

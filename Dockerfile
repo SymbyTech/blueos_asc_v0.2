@@ -33,6 +33,23 @@ LABEL permissions='\
   "HostConfig": {\
     "Privileged": true,\
     "Binds":["/root/.config:/root/.config"],\
+    "Devices": [\
+      {\
+        "PathOnHost": "/dev/LEDS",\
+        "PathInContainer": "/dev/LEDS",\
+        "CgroupPermissions": "rwm"\
+      },\
+      {\
+        "PathOnHost": "/dev/MOT1",\
+        "PathInContainer": "/dev/MOT1",\
+        "CgroupPermissions": "rwm"\
+      },\
+      {\
+        "PathOnHost": "/dev/MOT2",\
+        "PathInContainer": "/dev/MOT2",\
+        "CgroupPermissions": "rwm"\
+      }\
+    ],\
     "PortBindings": {\
       "80/tcp": [\
         {\
