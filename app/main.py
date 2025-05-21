@@ -258,26 +258,216 @@ app.mount("/", StaticFiles(directory="static", html=True), name="static")
 async def root():
     return "index.html"
 
-# Joystick page - moved to AFTER versioning to avoid conflicts
+# Joystick page - serve directly with inline HTML
 @app.get("/joystick", response_class=HTMLResponse)
 async def joystick_page():
-    with open(os.path.join(os.path.dirname(__file__), "joystick/templates/index.html"), "r") as f:
-        html_content = f.read()
-        # Update WebSocket URL to point to our endpoint
-        html_content = html_content.replace(
-            "var socket = io();", 
-            "var socket = new WebSocket(`ws://${window.location.host}/ws/joystick`);"
-        )
-        # Update any other Socket.IO specific code to use WebSocket
-        html_content = html_content.replace(
-            "socket.emit('joystick_data',", 
-            "socket.send(JSON.stringify("
-        )
-        html_content = html_content.replace(
-            "socket.on('joystick_response',", 
-            "socket.onmessage = function(event) { const data = JSON.parse(event.data); "
-        )
-        return "index.html"
+    # Define the joystick HTML directly in the code
+    html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joystick Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+            background-color: #333;
+            padding: 20px;
+        }
+        .controller-data {
+            margin: 20px auto;
+            text-align: left;
+            display: block;
+            background-color: #444;
+            padding: 15px;
+            border-radius: 5px;
+            max-width: 800px;
+        }
+        .axis-data, .button-data {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        h2 {
+            display: inline-block;
+            font-size: 14px;
+            margin: 0 10px 0 0;
+            color: #4CAF50;
+        }
+        .data-line {
+            margin: 5px 0;
+        }
+        .status {
+            margin: 10px auto;
+            padding: 5px;
+            background-color: #444;
+            border-radius: 5px;
+            max-width: 400px;
+        }
+        .connected {
+            color: #4CAF50;
+        }
+        .disconnected {
+            color: #F44336;
+        }
+        .visual-display {
+            margin: 20px auto;
+            width: 300px;
+            height: 300px;
+            border: 2px solid #4CAF50;
+            border-radius: 50%;
+            position: relative;
+            background-color: #222;
+        }
+        .joystick-dot {
+            width: 20px;
+            height: 20px;
+            background-color: #F44336;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>BlueOS Joystick Control</h1>
+    
+    <div id="connection-status" class="status disconnected">
+        WebSocket: Disconnected
+    </div>
+    
+    <div id="controller-status" class="status disconnected">
+        Controller: Disconnected
+    </div>
+
+    <div class="visual-display">
+        <div id="joystick-dot" class="joystick-dot"></div>
+    </div>
+
+    <div class="controller-data">
+        <div class="data-line">
+            <h2>Axis Data:</h2>
+            <span id="axis-data" class="axis-data"></span>
+        </div>
+        <div class="data-line">
+            <h2>Button Data:</h2>
+            <span id="button-data" class="button-data"></span>
+        </div>
+    </div>
+
+    <script>
+        // Create WebSocket connection
+        const socket = new WebSocket(`ws://${window.location.host}/ws/joystick`);
+        const connectionStatus = document.getElementById('connection-status');
+        const controllerStatus = document.getElementById('controller-status');
+        const joystickDot = document.getElementById('joystick-dot');
+        
+        // Connection opened
+        socket.addEventListener('open', (event) => {
+            connectionStatus.textContent = 'WebSocket: Connected';
+            connectionStatus.className = 'status connected';
+            console.log('WebSocket connected');
+        });
+        
+        // Connection closed
+        socket.addEventListener('close', (event) => {
+            connectionStatus.textContent = 'WebSocket: Disconnected';
+            connectionStatus.className = 'status disconnected';
+            console.log('WebSocket disconnected');
+        });
+        
+        // Listen for messages
+        socket.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Server response:', data);
+        });
+        
+        // Handle errors
+        socket.addEventListener('error', (event) => {
+            connectionStatus.textContent = 'WebSocket: Error';
+            connectionStatus.className = 'status disconnected';
+            console.error('WebSocket error:', event);
+        });
+
+        let controllerConnected = false;
+
+        window.addEventListener("gamepadconnected", (event) => {
+            controllerConnected = true;
+            controllerStatus.textContent = 'Controller: Connected';
+            controllerStatus.className = 'status connected';
+            console.log("Gamepad connected!");
+            updateControllerData();
+        });
+
+        window.addEventListener("gamepaddisconnected", (event) => {
+            controllerConnected = false;
+            controllerStatus.textContent = 'Controller: Disconnected';
+            controllerStatus.className = 'status disconnected';
+            console.log("Gamepad disconnected!");
+        });
+
+        function updateControllerData() {
+            if (controllerConnected && socket.readyState === WebSocket.OPEN) {
+                const gamepads = navigator.getGamepads();
+                const gp = gamepads[0];
+
+                // Display axis data horizontally
+                let axisDataHtml = "";
+                gp.axes.forEach((axis, index) => {
+                    axisDataHtml += `Axis ${index}: ${axis.toFixed(2)} `;
+                });
+                document.getElementById('axis-data').innerText = axisDataHtml;
+
+                // Display button data horizontally
+                let buttonDataHtml = "";
+                gp.buttons.forEach((button, index) => {
+                    let valueDisplay = button.value !== undefined ? button.value.toFixed(2) : button.pressed;
+                    buttonDataHtml += `Button ${index}: ${valueDisplay} `;
+                });
+                document.getElementById('button-data').innerText = buttonDataHtml;
+
+                // Update visual joystick position (assuming axis 0 is horizontal, 1 is vertical)
+                if (gp.axes.length >= 2) {
+                    const xAxis = gp.axes[0];
+                    const yAxis = gp.axes[1];
+                    
+                    // Calculate position (150 = center, 140 = radius)
+                    const dotX = 150 + (xAxis * 140);
+                    const dotY = 150 + (yAxis * 140);
+                    
+                    joystickDot.style.left = `${dotX}px`;
+                    joystickDot.style.top = `${dotY}px`;
+                }
+
+                // Send data to the server via WebSocket
+                socket.send(JSON.stringify({
+                    axes: gp.axes.map((axis, index) => ({ index, value: axis.toFixed(2) })),
+                    buttons: gp.buttons.map((button, index) => ({
+                        index,
+                        value: button.value !== undefined ? button.value.toFixed(2) : button.pressed
+                    }))
+                }));
+
+                // Request next frame update
+                requestAnimationFrame(updateControllerData);
+            } else if (controllerConnected) {
+                // If WebSocket is closed but controller is connected, try again later
+                setTimeout(updateControllerData, 1000);
+            }
+        }
+    </script>
+
+</body>
+</html>
+    """
+    return html_content
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=80, log_config=None)
