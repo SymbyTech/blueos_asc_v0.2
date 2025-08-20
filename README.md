@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)
 ![BlueOS](https://img.shields.io/badge/BlueOS-Compatible-green.svg)
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 
