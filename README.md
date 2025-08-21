@@ -269,7 +269,7 @@ ws.send(JSON.stringify({
    3. Select the Argonot Smart Control extension and fill in 
         `Extension Identifier`: symbytech.asc
         `Extension Name`: ASC
-        `Docker Image`: blueos-asc
+        `Docker Image`: symbytech/blueos-asc
         `Tag`: main
         `Original Settings`: ```
         {
@@ -315,6 +315,7 @@ ws.send(JSON.stringify({
   }
 }
 ```
+4. Click on the Create button
    ```
 
 ### **Docker Development**
