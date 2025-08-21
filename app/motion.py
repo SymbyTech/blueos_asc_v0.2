@@ -3,8 +3,8 @@ import threading
 import queue
 
 # Serial port configuration
-NANO2_SERIAL_PORT = '/dev/MOT1'  # Left motor
-NANO1_SERIAL_PORT = '/dev/MOT2'  # Right motor
+NANO2_SERIAL_PORT = '/dev/MOT2'  # Left motor
+NANO1_SERIAL_PORT = '/dev/MOT1'  # Right motor
 BAUD_RATE = 9600
 
 # Max speed
