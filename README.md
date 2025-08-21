@@ -243,9 +243,11 @@ ws.send(JSON.stringify({
 3. **Hardware Connection Setup**
    ```bash
    # Ensure device nodes exist for serial communication
-   ls -la /dev/MOT*  # Motor controllers
+   ls -la /dev/MOT1*  # Motor controllers
+   ls -la /dev/MOT2*  # Motor controllers
    ls -la /dev/LEDS  # LED controller
-   
+   # To seutup udev rules for persistent device names, see SetupNanoID.md
+
    # I2C bus availability
    ls -la /dev/i2c-*
    ```
@@ -259,11 +261,67 @@ ws.send(JSON.stringify({
    # Access at http://localhost:80
    ```
 
+5. **Install As BlueOS Extension**
+   ```bash
+   # Go to the Extensions page in BlueOS
+   1. Navigate to the Installed tab
+   2. Click on the Blue + button on the bottom right of the page
+   3. Select the Argonot Smart Control extension and fill in 
+        `Extension Identifier`: symbytech.asc
+        `Extension Name`: ASC
+        `Docker Image`: blueos-asc
+        `Tag`: main
+        `Original Settings`: ```
+        {
+  "ExposedPorts": {
+    "80/tcp": {},
+    "9009/tcp": {}
+  },
+  "HostConfig": {
+    "Privileged": true,
+    "Binds": [
+      "/root/.config:/root/.config",
+      "/dev:/dev"
+    ],
+    "Devices": [
+      {
+        "PathOnHost": "/dev/LEDS",
+        "PathInContainer": "/dev/LEDS",
+        "CgroupPermissions": "rwm"
+      },
+      {
+        "PathOnHost": "/dev/MOT1",
+        "PathInContainer": "/dev/MOT1",
+        "CgroupPermissions": "rwm"
+      },
+      {
+        "PathOnHost": "/dev/MOT2",
+        "PathInContainer": "/dev/MOT2",
+        "CgroupPermissions": "rwm"
+      }
+    ],
+    "PortBindings": {
+      "80/tcp": [
+        {
+          "HostPort": ""
+        }
+      ],
+      "9009/tcp": [
+        {
+          "HostPort": ""
+        }
+      ]
+    }
+  }
+}
+```
+   ```
+
 ### **Docker Development**
 
 1. **Build Extension Image**
    ```bash
-   docker build -t argonot-asc:dev .
+   docker build -t blueos-asc:main .
    ```
 
 2. **Run with Hardware Access**
@@ -272,7 +330,7 @@ ws.send(JSON.stringify({
      -v /dev:/dev \
      -v /root/.config:/root/.config \
      -p 80:80 \
-     argonot-asc:dev
+     blueos-asc:main   
    ```
 
 3. **Development with Volume Mounting**
@@ -281,23 +339,147 @@ ws.send(JSON.stringify({
      -v /dev:/dev \
      -v $(pwd)/app:/app \
      -p 80:80 \
-     argonot-asc:dev
+     blueos-asc:main
    ```
 
 ### **Arduino Controller Setup**
 
 #### **Motor Controller Code**
 ```cpp
-// Upload to each motor control Arduino Nano
-// Expects serial commands: "DIR:FORWARD,SPEED:15\n"
-// Responds with motor status
+#include <AccelStepper.h>
+
+// Pin Definitions
+const int stepPin = 3;  // Pin connected to the STEP input of the stepper driver
+const int dirPin = 2;   // Pin connected to the DIR (direction) input of the stepper driver
+
+// Motor Specifications
+const int stepsPerRev = 200; // Steps per revolution
+const float gearRatio = 1.43; // Gear ratio
+
+// Speed Variables
+float wheelCircumference = 0.5; // Wheel circumference in meters
+float targetSpeedStepsPerSec = 0; // Target speed in steps per second
+float currentSpeedStepsPerSec = 0; // Current speed in steps per second
+
+// Create an instance of the AccelStepper class
+AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
+
+void setup() {
+    Serial.begin(9600);
+
+    // Initialize motor
+    stepper.setMaxSpeed(1000);  // Max steps per second
+    stepper.setAcceleration(500); // Acceleration in steps per second^2
+}
+
+void loop() {
+    // Process incoming serial commands
+    if (Serial.available()) {
+        String command = Serial.readStringUntil('\n');
+        command.trim(); // Remove any leading or trailing whitespace
+
+        // Parse the command
+        int dirIndex = command.indexOf("DIR:");
+        int speedIndex = command.indexOf("SPEED:");
+
+        if (dirIndex >= 0 && speedIndex >= 0) {
+            String dirValue = command.substring(dirIndex + 4, command.indexOf(',', dirIndex));
+            String speedValue = command.substring(speedIndex + 6);
+            int speedKmh = speedValue.toInt();
+            float speedMps = (speedKmh * 1000) / 3600; // Convert km/h to m/s
+            float revsPerSec = speedMps / wheelCircumference;
+            targetSpeedStepsPerSec = revsPerSec * stepsPerRev * gearRatio;
+
+            if (targetSpeedStepsPerSec > 1000) {
+                targetSpeedStepsPerSec = 1000;
+            }
+
+            // Set motor direction
+            if (dirValue == "FORWARD") {
+                stepper.setPinsInverted(false, false, false); // Normal direction
+            } else if (dirValue == "BACKWARD") {
+                stepper.setPinsInverted(true, false, false); // Inverted direction
+            } else if (dirValue == "STOP") {
+                targetSpeedStepsPerSec = 0; // Stop the motor
+            }
+        }
+    }
+
+    // Gradually update motor speed for smooth transitions
+    if (currentSpeedStepsPerSec < targetSpeedStepsPerSec) {
+        currentSpeedStepsPerSec += 10; // Adjust increment value for desired ramping
+        if (currentSpeedStepsPerSec > targetSpeedStepsPerSec) {
+            currentSpeedStepsPerSec = targetSpeedStepsPerSec;
+        }
+    } else if (currentSpeedStepsPerSec > targetSpeedStepsPerSec) {
+        currentSpeedStepsPerSec -= 10; // Adjust decrement value for desired ramping
+        if (currentSpeedStepsPerSec < targetSpeedStepsPerSec) {
+            currentSpeedStepsPerSec = targetSpeedStepsPerSec;
+        }
+    }
+
+    // Set the motor speed
+    stepper.setSpeed(currentSpeedStepsPerSec);
+
+    // Continuously run the motor at the set speed
+    stepper.run();
+}
 ```
 
 #### **LED Controller Code** 
 ```cpp
-// Upload to LED control Arduino Nano  
-// Expects serial commands: "BRIGHTNESS:0:75\n"
-// Controls 4-channel LED output
+#include <Servo.h>
+
+// Define PWM-capable pins for each Lumen LED
+const int lumenPins[] = {3, 5, 6, 9};
+const int numLumens = sizeof(lumenPins) / sizeof(lumenPins[0]);
+
+Servo lumens[numLumens];
+
+// Define PWM values
+const int OFF_PWM = 1100;
+const int FULL_PWM = 1900;
+
+void setup() {
+    Serial.begin(9600);
+
+    // Attach each Servo to its respective pin
+    for (int i = 0; i < numLumens; i++) {
+        lumens[i].attach(lumenPins[i]);
+        lumens[i].writeMicroseconds(OFF_PWM); // Start at Off
+    }
+}
+
+void loop() {
+    static String inputString = "";
+    while (Serial.available()) {
+        char inChar = (char)Serial.read();
+        if (inChar == '\n') {
+            processCommand(inputString);
+            inputString = "";
+        } else {
+            inputString += inChar;
+        }
+    }
+}
+
+void processCommand(String command) {
+    command.trim();
+    if (command.startsWith("BRIGHTNESS:")) {
+        int firstColon = command.indexOf(':');
+        int secondColon = command.indexOf(':', firstColon + 1);
+        if (secondColon != -1) {
+            int index = command.substring(firstColon + 1, secondColon).toInt();
+            int brightness = command.substring(secondColon + 1).toInt();
+
+            index = constrain(index, 0, numLumens - 1);
+            brightness = constrain(brightness, 0, 100);
+            int pwmValue = map(brightness, 0, 100, OFF_PWM, FULL_PWM);
+
+            lumens[index].writeMicroseconds(pwmValue);
+        }
+    }
+}
 ```
 
 ### **Hardware Configuration**
