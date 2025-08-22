@@ -799,6 +799,9 @@
           // Setup gamepad event listeners
           window.addEventListener("gamepadconnected", this.handleGamepadConnected);
           window.addEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
+          
+          // Check for already connected gamepads on page load
+          this.checkExistingGamepads();
         },
         handleGamepadConnected(event) {
           this.controllerConnected = true;
@@ -814,6 +817,20 @@
           controllerStatus.textContent = 'Controller: Disconnected';
           controllerStatus.style.color = 'red';
           console.log("Gamepad disconnected!");
+        },
+        checkExistingGamepads() {
+          const gamepads = navigator.getGamepads();
+          for (let i = 0; i < gamepads.length; i++) {
+            if (gamepads[i]) {
+              this.controllerConnected = true;
+              const controllerStatus = document.getElementById('controller-status');
+              controllerStatus.textContent = 'Controller: Connected';
+              controllerStatus.style.color = '#4CAF50';
+              console.log("Found existing gamepad connection!");
+              this.updateControllerData();
+              break;
+            }
+          }
         },
         updateControllerData() {
           if (this.controllerConnected && this.joystickSocket && this.joystickSocket.readyState === WebSocket.OPEN) {

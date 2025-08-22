@@ -3,8 +3,8 @@ import threading
 import queue
 
 # Serial port configuration
-NANO2_SERIAL_PORT = '/dev/MOT1'  # Left motor
-NANO1_SERIAL_PORT = '/dev/MOT2'  # Right motor
+NANO2_SERIAL_PORT = '/dev/MOT2'  # Left motor
+NANO1_SERIAL_PORT = '/dev/MOT1'  # Right motor
 BAUD_RATE = 9600
 
 # Max speed
@@ -43,8 +43,20 @@ def initialize_motion_controller():
         nano1_serial = serial.Serial(NANO1_SERIAL_PORT, BAUD_RATE, timeout=1)
         nano2_serial = serial.Serial(NANO2_SERIAL_PORT, BAUD_RATE, timeout=1)
         print("Serial ports initialized.")
+        
+        # Wait for Arduino to be ready before sending commands
+        import time
+        time.sleep(2)  # Give Arduino time to initialize
+        
+        # Clear any pending data in the buffers
+        nano1_serial.reset_input_buffer()
+        nano1_serial.reset_output_buffer()
+        nano2_serial.reset_input_buffer()
+        nano2_serial.reset_output_buffer()
+        
         # Send stop command to ensure motors are stopped
         send_command_to_motors(0, "STOP", "STOP")
+        print("Motors initialized to STOP state.")
         return True
     except Exception as e:
         print(f"Error initializing serial ports: {e}")

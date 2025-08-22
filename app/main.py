@@ -32,6 +32,7 @@ app = FastAPI(
 
 # Global variables
 motion_controller_enabled = False
+motion_thread_started = False
 websocket_connections = set()
 
 # Connection Manager for WebSockets
@@ -76,9 +77,8 @@ def run_motion_controller():
         
         time.sleep(0.01)
 
-# Start motion controller thread
-motion_thread = threading.Thread(target=run_motion_controller, daemon=True)
-motion_thread.start()
+# Motion controller thread (will be started when needed)
+motion_thread = None
 
 # Data Models
 class LEDToggle(BaseModel):
@@ -126,13 +126,20 @@ async def stop_joystick():
 @app.post("/start_motion")
 @version(1, 0)
 async def start_motion():
-    global motion_controller_enabled
+    global motion_controller_enabled, motion_thread_started, motion_thread
     if motion_controller_enabled:
         return {"status": "error", "message": "Motion controller is already running."}
     try:
         # Initialize motion controller
         from motion import initialize_motion_controller
-        initialize_motion_controller()
+        if not initialize_motion_controller():
+            return {"status": "error", "message": "Failed to initialize motion controller"}
+        
+        # Start motion thread if not already started
+        if not motion_thread_started:
+            motion_thread = threading.Thread(target=run_motion_controller, daemon=True)
+            motion_thread.start()
+            motion_thread_started = True
         
         # Enable motion processing
         motion_controller_enabled = True
